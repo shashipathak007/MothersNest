@@ -81,3 +81,6 @@ export default function LabsTab({ patient, onAdd }) {
     </div>
   );
 }
+
+
+

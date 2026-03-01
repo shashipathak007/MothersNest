@@ -99,7 +99,7 @@ export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
       {/* ─── Basic medical history ─── */}
       <Card className="p-5">
         <SectionLabel>Basic Medical History</SectionLabel>
-        <p className="text-xs text-stone-400 mb-4">Select any pre-existing conditions. Detailed history will be taken during the first visit.</p>
+        <p className="text-xs text-stone-400 mb-4">Select any pre-existing conditions.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
           {BASIC_MEDICAL_FLAGS.map(flag => {
             const checked = !!form.basicMedical[flag.key];

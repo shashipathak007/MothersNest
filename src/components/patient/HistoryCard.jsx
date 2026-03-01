@@ -47,13 +47,14 @@ export default function HistoryCard({
         </div>
       )}
 
+      
       <div className="divide-y divide-stone-50">
         <Row label="Menstrual History"       value={menstrualHistory} />
         <Row label="Contraceptive History"   value={contraceptiveHistory} />
         <Row label="Medical History"         value={medicalHistory} />
         <Row label="Surgical History"        value={surgicalHistory} />
         <Row label="Family History"          value={familyHistory} />
-        <Row label="STI / HIV"          value={stiHistory} />
+        <Row label="STI / HIV"               value={stiHistory} />
       </div>
 
       {hasHabits && (

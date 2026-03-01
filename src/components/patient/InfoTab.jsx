@@ -63,6 +63,7 @@ export default function InfoTab({ patient, onViewVisits }) {
           </div>
         )}
 
+
         {patient.riskLevel === "moderate" && (
           <div className="bg-amber-500 text-white rounded-2xl px-4 py-3.5">
             <div className="flex items-center gap-2 mb-1">

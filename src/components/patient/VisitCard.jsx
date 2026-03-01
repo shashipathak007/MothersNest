@@ -95,3 +95,5 @@ export default function VisitCard({ visit, isLatest = false }) {
     </div>
   );
 }
+
+

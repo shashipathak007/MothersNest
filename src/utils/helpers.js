@@ -143,6 +143,7 @@ export const VISIT_TYPES = [
   "ANC 8th Visit (38–40 weeks)",
   "Emergency Visit",
   "Unscheduled ANC Visit",
+  "Normal Visit",
 ];
 
 export const VISIT_BADGE = {
@@ -260,42 +261,49 @@ export function autoRiskFromFirstVisit(firstVisit = {}) {
 /* ─── Lab tests catalogue ────────────────────────────────────────── */
 export const LAB_TESTS = [
   // Haematology
-  { name: "Haemoglobin", unit: "g/dL", category: "Haematology", low: 11.0, high: null },
+  { name: "Haemoglobin", unit: "g/dL", category: "Haematology", low: 11.0, high: 15.0 },
   { name: "Blood Group & Rh", unit: "", category: "Haematology", text: true },
-  { name: "Packed Cell Volume (PCV)", unit: "%", category: "Haematology", low: 33, high: null },
+  { name: "Packed Cell Volume (PCV)", unit: "%", category: "Haematology", low: 33, high: 44 },
   { name: "Platelet Count", unit: "×10³/µL", category: "Haematology", low: 150, high: 400 },
   { name: "WBC Count", unit: "×10³/µL", category: "Haematology", low: 4.5, high: 11 },
+
   // Blood Sugar
   { name: "Fasting Blood Sugar", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 99 },
-  { name: "Post-prandial Sugar", unit: "mg/dL", category: "Blood Sugar", low: null, high: 139 },
-  { name: "OGTT 75g (Fasting)", unit: "mg/dL", category: "Blood Sugar", low: null, high: 92 },
-  { name: "OGTT 75g (1 hr)", unit: "mg/dL", category: "Blood Sugar", low: null, high: 180 },
-  { name: "OGTT 75g (2 hr)", unit: "mg/dL", category: "Blood Sugar", low: null, high: 153 },
-  { name: "HbA1c", unit: "%", category: "Blood Sugar", low: null, high: 5.6 },
-  // Urine
+  { name: "Post-prandial Sugar", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 139 },
+  { name: "OGTT 75g (Fasting)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 92 },
+  { name: "OGTT 75g (1 hr)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 180 },
+  { name: "OGTT 75g (2 hr)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 153 },
+  { name: "HbA1c", unit: "%", category: "Blood Sugar", low: 4.0, high: 5.6 },
+
+  // Urine (text based)
   { name: "Urine Protein", unit: "", category: "Urine", text: true },
   { name: "Urine Sugar", unit: "", category: "Urine", text: true },
   { name: "Urine R/M/E", unit: "", category: "Urine", text: true },
+
   // Renal
-  { name: "Serum Creatinine", unit: "mg/dL", category: "Renal", low: null, high: 1.1 },
-  { name: "Serum Uric Acid", unit: "mg/dL", category: "Renal", low: null, high: 6.0 },
-  { name: "BUN", unit: "mg/dL", category: "Renal", low: null, high: 20 },
+  { name: "Serum Creatinine", unit: "mg/dL", category: "Renal", low: 0.5, high: 1.1 },
+  { name: "Serum Uric Acid", unit: "mg/dL", category: "Renal", low: 2.5, high: 6.0 },
+  { name: "BUN", unit: "mg/dL", category: "Renal", low: 7, high: 20 },
+
   // Thyroid
-  { name: "TSH", unit: "mIU/L", category: "Thyroid", low: 0.1, high: 4.0 },
+  { name: "TSH", unit: "mIU/L", category: "Thyroid", low: 0.4, high: 4.0 },
   { name: "T4 (Free)", unit: "ng/dL", category: "Thyroid", low: 0.7, high: 1.8 },
-  // Infectious
+
+  // Infectious (text based)
   { name: "HIV (1 & 2)", unit: "", category: "Infectious", text: true },
   { name: "HBsAg", unit: "", category: "Infectious", text: true },
   { name: "VDRL/RPR (Syphilis)", unit: "", category: "Infectious", text: true },
   { name: "HCV", unit: "", category: "Infectious", text: true },
+
   // Imaging
   { name: "Ultrasound (Dating)", unit: "", category: "Imaging", text: true },
   { name: "Anomaly Scan", unit: "", category: "Imaging", text: true },
   { name: "Growth Scan", unit: "", category: "Imaging", text: true },
   { name: "Doppler Study", unit: "", category: "Imaging", text: true },
+
   // Other
-  { name: "Vitamin D", unit: "ng/mL", category: "Other", low: 30, high: null },
-  { name: "Iron Studies", unit: "", category: "Other", text: true },
+  { name: "Vitamin D (25-OH)", unit: "ng/mL", category: "Other", low: 30, high: 100 },
+  { name: "Iron Studies (Ferritin)", unit: "ng/mL", category: "Other", low: 15, high: 150 },
   { name: "Indirect Coombs Test", unit: "", category: "Other", text: true },
 ];
 
@@ -311,11 +319,43 @@ export function getLabUnit(name) {
 
 export function autoLabStatus(name, value) {
   const meta = getLabMeta(name);
-  if (!meta || meta.text || !value || value === "") return "normal";
+
+  // No value entered
+  if (value === undefined || value === null || value === "") {
+    return "pending";
+  }
+
+  if (!meta) return "pending";
+
+  // TEXT BASED TESTS
+  if (meta.text) {
+    const v = String(value).toLowerCase().trim();
+
+    if (
+      v.includes("positive") ||
+      v.includes("reactive") ||
+      v.includes("detected") ||
+      v.includes("++") ||
+      v === "+"
+    ) {
+      return "abnormal";
+    }
+
+    return "normal";
+  }
+
+  // NUMERIC TESTS
   const num = parseFloat(value);
-  if (isNaN(num)) return "normal";
-  if (meta.low !== null && num < meta.low) return "abnormal";
-  if (meta.high !== null && num > meta.high) return "abnormal";
+  if (isNaN(num)) return "pending";
+
+  if (meta.low !== null && num < meta.low) {
+    return "abnormal";
+  }
+
+  if (meta.high !== null && num > meta.high) {
+    return "abnormal";
+  }
+
   return "normal";
 }
 
@@ -337,3 +377,4 @@ export function fetalHRFlag(fhr) {
   if (n > 160) return "tachycardia";
   return null;
 }
+

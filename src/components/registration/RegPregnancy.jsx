@@ -21,14 +21,14 @@ export default function RegPregnancy({ form, set }) {
           <FormInput label="Gravida *" type="number" min={1} value={form.gravida} onChange={e => set("gravida", e.target.value)} />
           <FormInput label="Para" type="number" min={0} value={form.para} onChange={e => set("para", e.target.value)} />
           <FormInput
-            label="LMP *"
+            label="Last Menstrual Period*"
             type="date"
             value={form.lmp}
             onChange={e => set("lmp", e.target.value)}
             className="col-span-2 sm:col-span-1"
           />
           <div className="col-span-2 sm:col-span-1 flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">EDD (auto)</label>
+            <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Estimated Date of Delivery</label>
             <div className="px-3.5 py-2.5 text-sm bg-blue-50 border border-blue-200 rounded-xl text-blue-800 font-semibold">
               {form.edd || "—"}
             </div>
@@ -46,9 +46,9 @@ export default function RegPregnancy({ form, set }) {
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
         <span className="text-blue-500 text-lg mt-0.5">ℹ</span>
         <div>
-          <p className="text-sm font-semibold text-blue-800">Detailed History at First Visit</p>
+          <p className="text-sm font-semibold text-blue-800">Detailed History Will Be Taken at First Visit by the Clinician</p>
           <p className="text-xs text-blue-600 mt-0.5">
-            Comprehensive obstetric, medical, surgical history and screenings will be recorded during the patient's first ANC visit by the clinician.
+            Comprehensive obstetric, medical, surgical history and screenings will be recorded during the patient's first visit by the clinician.
           </p>
         </div>
       </div>

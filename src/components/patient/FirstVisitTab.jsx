@@ -452,12 +452,12 @@ function FirstVisitForm({ patient, onSaved }) {
                 <span className="text-brand-600 text-lg mt-0.5">📋</span>
                 <div>
                     <p className="text-sm font-semibold text-brand-800">First Visit History Taking</p>
-                    <p className="text-xs text-brand-600 mt-0.5">Take comprehensive history as per WHO/Nepal ANC protocol. Fields marked with * from registration are pre-filled. Complete all sections and save.</p>
+                    <p className="text-xs text-brand-600 mt-0.5">Take comprehensive history as per WHO/Nepal ANC protocol.</p>
                 </div>
             </div>
 
             {/* 1. Presenting Complaints */}
-            <Section title="Presenting Complaints" icon="🗣️" defaultOpen>
+            <Section title="Presenting Complaints"  defaultOpen>
                 <FormTextarea label="Presenting Complaints *" value={form.presentingComplaints} onChange={e => set("presentingComplaints", e.target.value)} placeholder="Symptoms that bring the woman in..." rows={3} />
                 <div className="mt-3">
                     <FormTextarea label="History of Presenting Complaints" value={form.historyOfComplaints} onChange={e => set("historyOfComplaints", e.target.value)} placeholder="Chronological order, severity, aggravating/relieving factors..." rows={3} />
@@ -473,10 +473,10 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 2. Menstrual History */}
-            <Section title="Menstrual History" icon="📅">
+            <Section title="Menstrual History" >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">LMP (from registration)</label>
+                        <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">LMP </label>
                         <div className="px-3.5 py-2.5 text-sm bg-blue-50 border border-blue-200 rounded-xl text-blue-800 font-semibold">{form.menstrualHistory.lmp || "—"}</div>
                     </div>
                     <FormSelect label="Regular Cycles?" value={form.menstrualHistory.regularCycles ? "yes" : "no"} onChange={e => setMenstrual("regularCycles", e.target.value === "yes")}>
@@ -490,7 +490,7 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 3. Previous Obstetric History */}
-            <Section title="Previous Obstetric History" icon="🤰">
+            <Section title="Previous Obstetric History" >
                 <p className="text-xs text-stone-400 mb-3">Select any complications from previous pregnancies.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                     {OB_FLAGS.map(([key, label]) => (
@@ -701,7 +701,7 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 4. Medical History */}
-            <Section title="Medical History" icon="🏥">
+            <Section title="Medical History" >
                 <p className="text-xs text-stone-400 mb-3">Pre-filled from registration data. Add/update as needed.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                     {MEDICAL_ITEMS.map(([key, label]) => (
@@ -722,7 +722,7 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 5. Treatment History */}
-            <Section title="Treatment History" icon="💊">
+            <Section title="Treatment History" >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormInput label="Previous Hospital Admissions" value={form.treatmentHistory.prevAdmission} onChange={e => setTreat("prevAdmission", e.target.value)} placeholder="e.g. LSCS 2022" />
                     <div className="flex flex-col gap-1.5">
@@ -752,14 +752,14 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 6. Surgical History */}
-            <Section title="Surgical History" icon="🔪">
+            <Section title="Surgical History" >
                 <FormTextarea label="Surgical History" value={form.surgicalHistory} onChange={e => set("surgicalHistory", e.target.value)}
                     placeholder="Cardiac surgery, CS, myomectomy, LEEP/cone biopsy, operations for stress incontinence, VVF repair, abdominal surgery..."
                     rows={3} />
             </Section>
 
             {/* 7. Family History */}
-            <Section title="Family History" icon="👨‍👩‍👧‍👦">
+            <Section title="Family History" >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                     {FAMILY_ITEMS.map(([key, label]) => (
                         <BoolToggle key={key} label={label} value={form.familyHistory[key]} onChange={v => setFamily(key, v)} />
@@ -769,7 +769,7 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 8. Social History */}
-            <Section title="Social History" icon="🏠">
+            <Section title="Social History" >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormInput label="Employment / Occupation" value={form.socialHistory.employment} onChange={e => setSocial("employment", e.target.value)} placeholder="Type of occupation" />
                     <FormInput label="Home Circumstances" value={form.socialHistory.homeCircumstances} onChange={e => setSocial("homeCircumstances", e.target.value)} placeholder="e.g. Stable, Joint family" />
@@ -788,7 +788,7 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 9. Personal History */}
-            <Section title="Personal History" icon="👤">
+            <Section title="Personal History" >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[["smoking", "Smoking / Tobacco"], ["alcohol", "Alcohol Use"], ["drugs", "Drug Abuse"], ["prenatalCare", "Utilises Prenatal Care"]].map(([key, label]) => (
                         <BoolToggle key={key} label={label} value={form.personalHistory[key]} onChange={v => setPersonal(key, v)} />
@@ -797,14 +797,14 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 10. FP / Contraceptive History */}
-            <Section title="FP / Contraceptive History" icon="💉">
+            <Section title="FP / Contraceptive History" >
                 <FormTextarea label="Contraceptive History" value={form.contraceptiveHistory} onChange={e => set("contraceptiveHistory", e.target.value)}
                     placeholder="Types used, duration, reason for discontinuation, satisfaction, complications..."
                     rows={3} />
             </Section>
 
             {/* 11. Nutritional History */}
-            <Section title="Nutritional History" icon="🥗">
+            <Section title="Nutritional History" >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormSelect label="Diet Type" value={form.nutritionalHistory.dietType} onChange={e => setNutrition("dietType", e.target.value)}>
                         <option value="">Select</option>
@@ -817,28 +817,28 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 12. Gynaecological History */}
-            <Section title="Gynaecological History" icon="🩺">
+            <Section title="Gynaecological History" >
                 <FormTextarea label="Gynaecological History" value={form.gynaecologicalHistory} onChange={e => set("gynaecologicalHistory", e.target.value)}
                     placeholder="Recurrent vaginal discharge, pelvic pain, PID, fibroids, ovarian cysts, infertility, past treatments..."
                     rows={3} />
             </Section>
 
             {/* 13. STI / HIV History */}
-            <Section title="STI / HIV History" icon="🧬">
+            <Section title="STI / HIV History" >
                 <FormTextarea label="STI / HIV History" value={form.stiHistory} onChange={e => set("stiHistory", e.target.value)}
                     placeholder="HIV status, HBsAg, VDRL, other STIs..."
                     rows={2} />
             </Section>
 
             {/* 14. Gender-Based Violence Screening */}
-            <Section title="Screening — Gender-Based Violence" icon="🛡️">
+            <Section title="Screening — Gender-Based Violence" >
                 <FormTextarea label="GBV Screening Notes" value={form.gbvScreening} onChange={e => set("gbvScreening", e.target.value)}
                     placeholder="Screening results, concerns disclosed, counselling done..."
                     rows={2} />
             </Section>
 
             {/* 15. Examination */}
-            <Section title="Physical Examination" icon="🩻">
+            <Section title="Physical Examination" >
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <FormInput label="General Condition" value={form.examination.generalCondition} onChange={e => setExam("generalCondition", e.target.value)} placeholder="Good / Fair / Poor" />
                     <FormInput label="BP (mmHg)" value={form.examination.bp} onChange={e => setExam("bp", e.target.value)} placeholder="120/80" />
@@ -857,7 +857,7 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 16. Summary */}
-            <Section title="Summary of History" icon="📝" defaultOpen>
+            <Section title="Summary of History"  defaultOpen>
                 <FormTextarea label="Summary" value={form.summary} onChange={e => set("summary", e.target.value)}
                     placeholder="Patient name, age, time since marriage, gravida, parity, miscarriages, live children, weeks of gestation, associated conditions. Normal vs high-risk assessment."
                     rows={4} />

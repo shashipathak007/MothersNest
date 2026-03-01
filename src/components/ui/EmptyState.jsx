@@ -6,3 +6,5 @@ export default function EmptyState({ icon = "✦", message }) {
     </div>
   );
 }
+
+

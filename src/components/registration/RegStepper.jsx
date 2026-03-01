@@ -35,3 +35,6 @@ export default function RegStepper({ current, completed }) {
     </aside>
   );
 }
+
+
+

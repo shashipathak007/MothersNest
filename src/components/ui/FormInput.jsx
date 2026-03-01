@@ -16,3 +16,5 @@ export default function FormInput({ label, error, className = "", ...rest }) {
     </div>
   );
 }
+
+
