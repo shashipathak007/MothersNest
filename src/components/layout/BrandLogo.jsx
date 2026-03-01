@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import logo from "/Users/sashipathak/Desktop/MothersNest/src/Assets/logoo.png";
+import logo from "src/Assets/logoo.png";
 
 export default function BrandLogo({ showText = true }) {
   return (
