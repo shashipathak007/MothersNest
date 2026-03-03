@@ -14,7 +14,7 @@ import Card from "../components/ui/Card.jsx";
 export default function DashboardPage() {
   const { state } = useApp();
   const navigate = useNavigate();
-  const [search, setSearch]   = useState("");
+  const [search, setSearch] = useState("");
   const [riskFilter, setRisk] = useState("all");
 
   const filtered = state.patients.filter(p => {
@@ -48,7 +48,7 @@ export default function DashboardPage() {
     <AppShell header={header}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <SearchBar value={search} onChange={setSearch} className="sm:hidden" />
-        <StatsGrid patients={state.patients} />
+        <StatsGrid patients={state.patients} onFilter={setRisk} activeFilter={riskFilter} />
         <RiskFilterBar active={riskFilter} onChange={setRisk} count={filtered.length} />
         <div className="lg:hidden space-y-3">
           {filtered.length === 0
@@ -61,3 +61,5 @@ export default function DashboardPage() {
     </AppShell>
   );
 }
+
+

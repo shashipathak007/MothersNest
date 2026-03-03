@@ -10,8 +10,15 @@ export function RiskBadge({ level }) {
   );
 }
 
-export function TagChip({ label }) {
-  const cls = TAG_PILL[label] ?? "bg-stone-100 text-stone-600 ring-1 ring-stone-200";
+export function TagChip({ label, risk }) {
+  let cls = TAG_PILL[label] ?? "bg-stone-100 text-stone-600 ring-1 ring-stone-200";
+
+  if (risk === "high") {
+    cls = "bg-red-50 text-red-600 ring-2 ring-red-100 font-bold";
+  } else if (risk === "moderate") {
+    cls = "bg-amber-50 text-amber-600 ring-2 ring-amber-100 font-bold";
+  }
+
   return (
     <span className={`inline-block px-2 py-0.75 rounded-md text-[11px] font-medium ${cls}`}>
       {label}

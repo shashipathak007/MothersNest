@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─── Custom design tokens (Tailwind v4 @theme) ─────────────────── */
-@theme {
+@theme{
   --font-sans:    "DM Sans", system-ui, sans-serif;
   --font-display: "Cormorant Garamond", Georgia, serif;
 
@@ -16,6 +16,7 @@
   --color-brand-800: #1e40af;
   --color-brand-900: #1e3a8a;
 }
+
 
 /* ─── Base resets ───────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }

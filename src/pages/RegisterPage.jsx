@@ -12,17 +12,40 @@ import { today, nextId, calcEDD, calcGA } from "../utils/helpers.js";
 
 const EMPTY = {
   // Personal
-  name: "", age: "", phone: "", address: "",
-  bloodGroup: "", religion: "", ethnicity: "",
-  education: "", occupation: "",
-  weight: "", height: "",
-  // Partner (optional)
-  partner: { name: "", age: "", phone: "", education: "", occupation: "" },
-  // Basic medical
+  name: "",
+  age: "",
+  phone: "",
+  address: "",
+  bloodGroup: "",
+  religion: "",
+  ethnicity: "",
+  education: "",
+  occupation: "",
+
+  // Physical
+  weight: "",
+  heightFt: "",
+  heightIn: "",
+
+  // Partner
+  partner: {
+    name: "",
+    age: "",
+    phone: "",
+    education: "",
+    occupation: "",
+  },
+
+  // Medical
   basicMedical: {},
   allergies: "",
+
   // Pregnancy
-  gravida: "1", para: "0", lmp: "", edd: "", ga: "",
+  gravida: "1",
+  para: "0",
+  lmp: "",
+  edd: "",
+  ga: "",
 };
 
 export default function RegisterPage() {
@@ -33,13 +56,17 @@ export default function RegisterPage() {
   const [form, setFormState] = useState(EMPTY);
   const [errors, setErrors] = useState({});
 
-  const set = (key, value) => setFormState(prev => ({ ...prev, [key]: value }));
+  const set = (key, value) =>
+    setFormState((prev) => ({ ...prev, [key]: value }));
 
   const setPartner = (key, value) =>
-    setFormState(prev => ({ ...prev, partner: { ...prev.partner, [key]: value } }));
+    setFormState((prev) => ({
+      ...prev,
+      partner: { ...prev.partner, [key]: value },
+    }));
 
   const setMedFlag = (key, checked) =>
-    setFormState(prev => ({
+    setFormState((prev) => ({
       ...prev,
       basicMedical: { ...prev.basicMedical, [key]: checked },
     }));
@@ -59,14 +86,36 @@ export default function RegisterPage() {
 
   function next() {
     if (!validate(step)) return;
-    setCompleted(prev => [...new Set([...prev, step])]);
-    setStep(s => s + 1);
+    setCompleted((prev) => [...new Set([...prev, step])]);
+    setStep((s) => s + 1);
   }
 
-  function back() { setStep(s => s - 1); }
+  function back() {
+    setStep((s) => s - 1);
+  }
 
   function handleSubmit() {
     if (!validate(step)) return;
+
+    // ─── Convert ft/in → cm ───
+    let heightCm = null;
+    let bmi = null;
+
+    if (form.heightFt) {
+      const totalInches =
+        parseFloat(form.heightFt || 0) * 12 +
+        parseFloat(form.heightIn || 0);
+
+      heightCm = totalInches * 2.54;
+
+      if (form.weight && heightCm > 0) {
+        const heightMeters = heightCm / 100;
+        bmi = (
+          parseFloat(form.weight) /
+          (heightMeters * heightMeters)
+        ).toFixed(1);
+      }
+    }
 
     dispatch({
       type: "ADD_PATIENT",
@@ -82,7 +131,8 @@ export default function RegisterPage() {
         education: form.education,
         occupation: form.occupation,
         weight: form.weight,
-        height: form.height,
+        height: heightCm ? heightCm.toFixed(1) : null,
+        bmi: bmi,
         partner: form.partner,
         basicMedical: form.basicMedical,
         allergies: form.allergies.trim(),
@@ -99,6 +149,7 @@ export default function RegisterPage() {
         firstVisit: null,
       },
     });
+
     navigate("/");
   }
 
@@ -123,9 +174,11 @@ export default function RegisterPage() {
   return (
     <AppShell header={header}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* Page title */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-stone-900 mb-1" style={{ fontFamily: "var(--font-display)" }}>
+          <h1
+            className="text-2xl font-bold text-stone-900 mb-1"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
             Register New Patient
           </h1>
           <p className="text-sm text-stone-400">
@@ -134,40 +187,53 @@ export default function RegisterPage() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar stepper */}
           <RegStepper current={step} completed={completed} />
 
-          {/* Form content */}
           <div className="flex-1 min-w-0">
-            {/* Error banner */}
             {Object.keys(errors).length > 0 && (
-              <div className="mb-4 bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
-                <span className="text-rose-600 mt-0.5">⚠</span>
-                <div>
-                  <p className="text-sm font-semibold text-rose-800">Please fix the following:</p>
-                  <ul className="mt-1 space-y-0.5">
-                    {Object.values(errors).map((e, i) => (
-                      <li key={i} className="text-xs text-rose-600">• {e}</li>
-                    ))}
-                  </ul>
-                </div>
+              <div className="mb-4 bg-rose-50 border border-rose-200 rounded-2xl p-4">
+                <p className="text-sm font-semibold text-rose-800">
+                  Please fix the following:
+                </p>
+                <ul className="mt-1 space-y-0.5">
+                  {Object.values(errors).map((e, i) => (
+                    <li key={i} className="text-xs text-rose-600">
+                      • {e}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
-            {step === 1 && <RegPersonal form={form} set={set} setPartner={setPartner} setMedFlag={setMedFlag} />}
-            {step === 2 && <RegPregnancy form={form} set={set} />}
+            {step === 1 && (
+              <RegPersonal
+                form={form}
+                set={set}
+                setPartner={setPartner}
+                setMedFlag={setMedFlag}
+              />
+            )}
 
-            {/* Footer buttons */}
+            {step === 2 && (
+              <RegPregnancy form={form} set={set} />
+            )}
+
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-stone-200">
-              <Button variant="ghost" onClick={step === 1 ? () => navigate("/") : back}>
+              <Button
+                variant="ghost"
+                onClick={step === 1 ? () => navigate("/") : back}
+              >
                 {step === 1 ? "Cancel" : "← Back"}
               </Button>
+
               {step < 2 ? (
-                <Button onClick={next}>
-                  Continue →
-                </Button>
+                <Button onClick={next}>Continue →</Button>
               ) : (
-                <Button variant="success" onClick={handleSubmit} disabled={!form.name || !form.phone}>
+                <Button
+                  variant="success"
+                  onClick={handleSubmit}
+                  disabled={!form.name || !form.phone}
+                >
                   ✓ Register Patient
                 </Button>
               )}

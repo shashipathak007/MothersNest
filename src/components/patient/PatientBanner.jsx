@@ -3,8 +3,21 @@ import { OB_RISK_FLAGS } from "../../utils/helpers.js";
 
 export default function PatientBanner({ patient }) {
   const obHighFlags = OB_RISK_FLAGS.filter(
-    f => f.risk === "high" && patient.obstetricFlags?.[f.key]
+    f => f.risk === "high" && (patient.firstVisit?.obstetricHistory?.[f.key] || patient.obstetricFlags?.[f.key])
   );
+
+  // Build concise risk reasons
+  const riskReasons = [];
+  if (patient.firstVisit?.completed) {
+    const med = patient.firstVisit.medicalHistory || {};
+    if (med.hypertension) riskReasons.push("HTN");
+    if (med.diabetes) riskReasons.push("DM");
+    if (med.hiv) riskReasons.push("HIV");
+    if (med.heartDisease) riskReasons.push("Heart Disease");
+    if (med.thyroid) riskReasons.push("Thyroid");
+  }
+  obHighFlags.forEach(f => riskReasons.push(f.label.replace("Previous ", "Prev ")));
+  (patient.tags || []).forEach(t => { if (!riskReasons.includes(t)) riskReasons.push(t); });
 
   return (
     <div className="py-4">
@@ -18,6 +31,16 @@ export default function PatientBanner({ patient }) {
         <RiskBadge level={patient.riskLevel} />
         {patient.tags?.map(t => <TagChip key={t} label={t} />)}
       </div>
+
+      {/* Risk reasons summary */}
+      {riskReasons.length > 0 && patient.riskLevel !== "low" && (
+        <p className="mt-1.5 text-[11px] text-stone-500">
+          <span className={`font-bold ${patient.riskLevel === "high" ? "text-rose-600" : "text-amber-600"}`}>
+            {patient.riskLevel === "high" ? "⚠ High Risk" : "⚠ Moderate Risk"}:
+          </span>{" "}
+          {riskReasons.slice(0, 4).join(" · ")}{riskReasons.length > 4 ? ` +${riskReasons.length - 4} more` : ""}
+        </p>
+      )}
 
       {/* High-risk from obstetric history shown prominently */}
       {obHighFlags.length > 0 && (

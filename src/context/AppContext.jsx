@@ -1,4 +1,5 @@
 import { createContext, useReducer } from "react";
+import { computeOverallRisk } from "../utils/helpers.js";
 
 
 const SEED = [
@@ -10,9 +11,9 @@ const SEED = [
     education: "Post Graduate", occupation: "Banker",
     weight: "74", height: "162",
     partner: { name: "Bishal Thapa", age: 41, occupation: "Government Official" },
-    basicMedical: { thyroid: true, highBP: false },
+    basicMedical: { thyroid: true, highBP: true, diabetes: true, prevCS: true },
     allergies: "Dust, Pollen",
-    gravida: 3, para: 0, 
+    gravida: 3, para: 0,
     lmp: "2025-08-24", edd: "2026-05-31", ga: "27+0",
     // Matches MOD_RISK_TAGS
     tags: ["Thyroid", "Elderly Gravida"],
@@ -44,10 +45,10 @@ const SEED = [
     partner: { name: "Karan Bk", age: 21, occupation: "Driver" },
     basicMedical: {},
     allergies: "None",
-    gravida: 1, para: 0, 
+    gravida: 1, para: 0,
     lmp: "2025-10-26", edd: "2026-08-02", ga: "18+0",
     // No tags from your config apply here
-    tags: [], 
+    tags: [],
     riskLevel: "low",
     registeredOn: "2026-01-20",
     firstVisit: {
@@ -76,7 +77,7 @@ const SEED = [
     partner: { name: "Suman Gurung", age: 33, occupation: "Army" },
     basicMedical: { diabetes: false },
     allergies: "Sulfa drugs",
-    gravida: 1, para: 0, 
+    gravida: 1, para: 0,
     lmp: "2025-08-10", edd: "2026-05-17", ga: "29+0",
     // Matches HIGH_RISK_TAGS
     tags: ["Twin Pregnancy"],
@@ -107,7 +108,7 @@ const SEED = [
     partner: { name: "Rahul Sharma", age: 32, phone: "9876500000", occupation: "Engineer", education: "Post Graduate" },
     basicMedical: { prevCS: true, diabetes: false, highBP: false, thyroid: false },
     allergies: "Penicillin",
-    gravida: 2, para: 1, 
+    gravida: 2, para: 1,
     lmp: "2025-12-21", edd: "2026-09-27", ga: "10+0", // GA: 10 Weeks
     tags: ["Rh Negative"],
     riskLevel: "high",
@@ -165,7 +166,7 @@ const SEED = [
     partner: { name: "Arun Khadka", age: 35, phone: "9123400000", occupation: "Business", education: "Graduate" },
     basicMedical: {},
     allergies: "",
-    gravida: 1, para: 0, 
+    gravida: 1, para: 0,
     lmp: "2025-11-16", edd: "2026-08-23", ga: "15+0", // GA: 15 Weeks
     tags: ["PIH"], riskLevel: "moderate", registeredOn: "2026-01-01",
     firstVisit: {
@@ -208,7 +209,7 @@ const SEED = [
     partner: { name: "Suresh Kumar", age: 26, phone: "9988700000", occupation: "Farmer", education: "Secondary (9–10)" },
     basicMedical: {},
     allergies: "",
-    gravida: 1, para: 0, 
+    gravida: 1, para: 0,
     lmp: "2025-08-03", edd: "2026-05-10", ga: "30+0", // GA: 30 Weeks
     tags: [], riskLevel: "low", registeredOn: "2026-01-15",
     firstVisit: null,
@@ -229,7 +230,7 @@ const SEED = [
     partner: { name: "Arun Khadka", age: 35, phone: "9123400000", occupation: "Business", education: "Graduate" },
     basicMedical: {},
     allergies: "",
-    gravida: 1, para: 0, 
+    gravida: 1, para: 0,
     lmp: "2025-06-29", edd: "2026-04-05", ga: "35+0", // GA: 35 Weeks
     tags: ["PIH"], riskLevel: "moderate", registeredOn: "2025-10-01",
     firstVisit: {
@@ -262,30 +263,60 @@ const SEED = [
       { id: "l2a", test: "Haemoglobin", date: "2026-02-20", value: "10.6", unit: "g/dL", status: "abnormal" },
     ],
   },
-  
+
 ];
 
 function reducer(state, action) {
   switch (action.type) {
-    case "ADD_PATIENT":
-      return { ...state, patients: [action.payload, ...state.patients] };
+    case "ADD_PATIENT": {
+      const newP = { ...action.payload };
+      newP.riskLevel = computeOverallRisk(newP);
+      return { ...state, patients: [newP, ...state.patients] };
+    }
     case "ADD_VISIT":
       return {
-        ...state, patients: state.patients.map(p =>
-          p.id === action.patientId ? { ...p, visits: [action.payload, ...p.visits] } : p
-        )
+        ...state, patients: state.patients.map(p => {
+          if (p.id === action.patientId) {
+            const updatedP = {
+              ...p,
+              weight: action.payload.weight || p.weight,
+              height: action.payload.height || p.height,
+              bmi: action.payload.bmi || p.bmi,
+              visits: [action.payload, ...p.visits]
+            };
+            updatedP.riskLevel = computeOverallRisk(updatedP);
+            return updatedP;
+          }
+          return p;
+        })
       };
     case "ADD_LAB":
       return {
-        ...state, patients: state.patients.map(p =>
-          p.id === action.patientId ? { ...p, labs: [action.payload, ...p.labs] } : p
-        )
+        ...state, patients: state.patients.map(p => {
+          if (p.id === action.patientId) {
+            const updatedP = { ...p, labs: [action.payload, ...p.labs] };
+            updatedP.riskLevel = computeOverallRisk(updatedP);
+            return updatedP;
+          }
+          return p;
+        })
       };
     case "SAVE_FIRST_VISIT":
       return {
-        ...state, patients: state.patients.map(p =>
-          p.id === action.patientId ? { ...p, firstVisit: action.payload, riskLevel: action.payload.autoRisk || p.riskLevel } : p
-        )
+        ...state, patients: state.patients.map(p => {
+          if (p.id === action.patientId) {
+            const updatedP = {
+              ...p,
+              firstVisit: action.payload,
+              weight: action.payload.examination?.weight || p.weight,
+              height: action.payload.examination?.height || p.height,
+              bmi: action.payload.examination?.bmi || p.bmi,
+            };
+            updatedP.riskLevel = computeOverallRisk(updatedP);
+            return updatedP;
+          }
+          return p;
+        })
       };
     default: return state;
   }

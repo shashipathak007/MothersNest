@@ -53,7 +53,7 @@ function FirstVisitReadView({ fv }) {
                 <div className={`rounded-2xl px-4 py-3.5 ${risk === "high" ? "bg-rose-600 text-white" : "bg-amber-500 text-white"}`}>
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-lg">⚠</span>
-                        <p className="text-xs font-bold uppercase tracking-wider">{rc.label} — From First Visit Assessment</p>
+                        <p className="text-xs font-bold uppercase tracking-wider">{rc.label} — From Maternal Health Evaluation</p>
                     </div>
                 </div>
             )}
@@ -451,7 +451,7 @@ function FirstVisitForm({ patient, onSaved }) {
             <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex items-start gap-3 mb-2">
                 <span className="text-brand-600 text-lg mt-0.5">📋</span>
                 <div>
-                    <p className="text-sm font-semibold text-brand-800">First Visit History Taking</p>
+                    <p className="text-sm font-semibold text-brand-800">History Taking</p>
                     <p className="text-xs text-brand-600 mt-0.5">Take comprehensive history as per WHO/Nepal ANC protocol.</p>
                 </div>
             </div>
@@ -846,7 +846,7 @@ function FirstVisitForm({ patient, onSaved }) {
                     <FormInput label="Weight (kg)" type="number" value={form.examination.weight} onChange={e => setExam("weight", e.target.value)} placeholder="58" />
                     <FormInput label="Height (cm)" type="number" value={form.examination.height} onChange={e => setExam("height", e.target.value)} placeholder="155" />
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">BMI (auto)</label>
+                        <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">BMI </label>
                         <div className="px-3.5 py-2.5 text-sm bg-blue-50 border border-blue-200 rounded-xl text-blue-800 font-semibold">{examBMI || "—"}</div>
                     </div>
                     <FormInput label="Breast Exam" value={form.examination.breastExam} onChange={e => setExam("breastExam", e.target.value)} placeholder="Normal / Abnormal" />
@@ -877,7 +877,7 @@ function FirstVisitForm({ patient, onSaved }) {
             {/* Save */}
             <div className="flex justify-end gap-3 pt-4 border-t border-stone-200">
                 <Button variant="success" onClick={handleSave} disabled={!form.presentingComplaints.trim()}>
-                    ✓ Complete First Visit
+                    ✓ Complete Maternal Health Evaluation
                 </Button>
             </div>
         </div>
@@ -907,9 +907,9 @@ export default function FirstVisitTab({ patient }) {
         <div>
             <div className="mb-4">
                 <h2 className="text-lg font-bold text-stone-900" style={{ fontFamily: "var(--font-display)" }}>
-                    {patient.firstVisit?.completed ? "Edit First Visit" : "First Visit — Take History"}
+                    {patient.firstVisit?.completed ? "Edit First Visit" : "Maternal Health Evaluation"}
                 </h2>
-                <p className="text-xs text-stone-400">Comprehensive clinical assessment per WHO/Nepal 8-ANC protocol</p>
+                <p className="text-xs text-stone-400">Comprehensive clinical evaluation per protocol</p>
             </div>
             <FirstVisitForm patient={patient} onSaved={() => setEditing(false)} />
         </div>

@@ -9,7 +9,6 @@ import PatientTabBar from "../components/patient/PatientTabBar.jsx";
 import InfoTab from "../components/patient/InfoTab.jsx";
 import FirstVisitTab from "../components/patient/FirstVisitTab.jsx";
 import VisitsTab from "../components/patient/VisitsTab.jsx";
-import LabsTab from "../components/patient/LabsTab.jsx";
 import AddVisitModal from "../components/modals/AddVisitModal.jsx";
 import AddLabModal from "../components/modals/AddLabModal.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -24,16 +23,13 @@ export default function PatientPage() {
 
   const patient = state.patients.find(p => p.id === id);
   if (!patient) return <Navigate to="/" replace />;
-
-  const hasAbnormalLab = patient.labs.some(l => l.status === "abnormal");
   const missedContacts = getMissedContacts(patient.lmp, patient.visits);
   const firstVisitDone = !!patient.firstVisit?.completed;
 
   const TABS = [
     { id: "info", label: "Patient Info" },
-    { id: "firstVisit", label: firstVisitDone ? "First Visit ✓" : "First Visit", dot: !firstVisitDone },
+    { id: "firstVisit", label: firstVisitDone ? "Maternal health evaluation ✓" : "Maternal health evaluation", dot: !firstVisitDone },
     { id: "visits", label: `Visits (${patient.visits.length})`, dot: missedContacts.length > 0 },
-    { id: "labs", label: `Labs (${patient.labs.length})`, dot: hasAbnormalLab },
   ];
 
   const header = (
@@ -43,7 +39,6 @@ export default function PatientPage() {
         <div className="w-px h-5 bg-stone-200" />
         <BackButton label="Dashboard" to="/" />
         <div className="ml-auto flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setShowLab(true)}>+ Lab</Button>
           <Button size="sm" onClick={() => setShowVisit(true)}>+ Visit</Button>
         </div>
       </div>
@@ -85,7 +80,7 @@ export default function PatientPage() {
             <div className="flex items-start gap-3">
               <span className="text-brand-500 text-lg shrink-0 mt-0.5">📋</span>
               <div className="flex-1">
-                <p className="text-sm font-bold text-brand-800">First Visit Assessment Needed</p>
+                <p className="text-sm font-bold text-brand-800">Maternal health evaluation</p>
                 <p className="text-xs text-brand-600 mt-0.5">Comprehensive history-taking has not been completed yet.</p>
               </div>
               <button
@@ -101,7 +96,6 @@ export default function PatientPage() {
         {tab === "info" && <InfoTab patient={patient} onViewVisits={() => setTab("visits")} />}
         {tab === "firstVisit" && <FirstVisitTab patient={patient} />}
         {tab === "visits" && <VisitsTab visits={patient.visits} onAdd={() => setShowVisit(true)} missedContacts={missedContacts} />}
-        {tab === "labs" && <LabsTab patient={patient} onAdd={() => setShowLab(true)} />}
       </div>
 
       {showVisit && <AddVisitModal patient={patient} onClose={() => setShowVisit(false)} />}

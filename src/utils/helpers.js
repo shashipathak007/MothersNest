@@ -50,17 +50,17 @@ export function calcBMI(weight, height) {
 
 /* ─── Obstetric history risk flags ──────────────────────────────── */
 export const OB_RISK_FLAGS = [
-  { key: "prevCS", label: "Previous Caesarean Section", risk: "high" },
   { key: "prevPPH", label: "Previous PPH", risk: "high" },
   { key: "prevPreterm", label: "Previous Preterm Birth", risk: "high" },
   { key: "prevStillbirth", label: "Previous Stillbirth", risk: "high" },
   { key: "prevEclampsia", label: "Previous Eclampsia / PIH", risk: "high" },
-  { key: "prevGDM", label: "Previous GDM", risk: "high" },
-  { key: "prevNeonatal", label: "Previous Neonatal Death", risk: "high" },
-  { key: "prevCongenital", label: "Previous Congenital Anomaly", risk: "moderate" },
-  { key: "prevMidforce", label: "Previous Forceps/Vacuum", risk: "moderate" },
-  { key: "prevAbortion", label: "Previous Abortion (≥2)", risk: "moderate" },
-  { key: "prevAnemia", label: "Severe Anaemia in prev. preg.", risk: "moderate" },
+  { key: "prevNeonatalDeath", label: "Previous Neonatal Death", risk: "high" },
+  { key: "prevCongenitalAnomaly", label: "Previous Congenital Anomaly", risk: "high" },
+  { key: "prevAbortion2Plus", label: "Previous Abortion (≥2)", risk: "high" },
+  { key: "prevSevereAnaemia", label: "Severe Anaemia in prev. preg.", risk: "high" },
+  { key: "prevCS", label: "Previous Caesarean Section", risk: "moderate" },
+  { key: "prevForceps", label: "Previous Forceps/Vacuum", risk: "moderate" },
+  { key: "prevGDM", label: "Previous GDM", risk: "moderate" },
 ]
 
 export function autoRiskFromObHistory(flags = {}) {
@@ -88,6 +88,154 @@ export function autoRisk(tags = [], obFlags = {}) {
   return "low";
 }
 
+export function computeOverallRisk(patient) {
+  if (!patient) return "low";
+
+  let risk = "low";
+  const promote = (lvl) => {
+    const order = { low: 0, moderate: 1, high: 2 };
+    if (order[lvl] > order[risk]) risk = lvl;
+  };
+
+  // ── 1. First Visit assessment (ROS + Medical + Obstetric) ──
+  if (patient.firstVisit?.completed) {
+    const fv = patient.firstVisit;
+    const ros = fv.reviewOfSystems || {};
+    const med = fv.medicalHistory || {};
+    const ob = fv.obstetricHistory || {};
+
+    // HIGH RISK — Current Danger Symptoms from ROS
+    if (ros.pvBleeding) promote("high");
+    if (ros.fetalMovements) promote("high"); // reduced/absent
+    if (ros.contractions) promote("high"); // preterm contractions
+    if (ros.headache && ros.visualDisturbance) promote("high"); // pre-eclampsia signs
+    if (ros.headache && ros.epigastricPain) promote("high");
+    if (ros.oedema && med.hypertension) promote("high"); // severe oedema with HTN
+
+    // MODERATE RISK — Symptoms from ROS
+    if (ros.pvDischarge) promote("moderate");
+    if (ros.pelvicPain) promote("moderate");
+    if (ros.dyspareunia) promote("moderate");
+    if (ros.oedema && !med.hypertension) promote("moderate"); // mild oedema without HTN
+
+    // HIGH RISK — Bad Obstetric History (BOH)
+    if (ob.prevPPH) promote("high");
+    if (ob.prevPreterm) promote("high");
+    if (ob.prevStillbirth) promote("high");
+    if (ob.prevEclampsia) promote("high");
+    if (ob.prevNeonatalDeath) promote("high");
+    if (ob.prevCongenitalAnomaly) promote("high");
+    if (ob.prevAbortion2Plus) promote("high");
+    if (ob.prevSevereAnaemia) promote("high");
+
+    // MODERATE RISK — Past Obstetric History
+    if (ob.prevCS) promote("moderate");
+    if (ob.prevForceps) promote("moderate");
+    if (ob.prevGDM) promote("moderate");
+
+    // HIGH RISK — Serious Maternal Medical Disorders
+    if (med.hypertension) promote("high");
+    if (med.diabetes) promote("high");
+    if (med.heartDisease) promote("high");
+    if (med.sle) promote("high");
+    if (med.sickleCell) promote("high");
+    if (med.hiv) promote("high");
+    if (med.hepatitisB) promote("high");
+    if (med.hepatitisC) promote("high");
+    if (med.tb) promote("high");
+    if (med.kidneyLiver) promote("high");
+    if (med.cysticFibrosis) promote("high");
+    if (med.epilepsy) promote("high");
+
+    // MODERATE RISK — Chronic but Controlled Diseases
+    if (med.asthma) promote("moderate");
+    if (med.thyroid) promote("moderate");
+  } else {
+    // No first visit yet — fallback to tags + basicMedical from registration
+    const tagsRisk = autoRisk(patient.tags || [], patient.basicMedical || {});
+    promote(tagsRisk);
+  }
+
+  // ── 2. Registration basic medical flags ──
+  const bm = patient.basicMedical || {};
+  if (bm.highBP) promote("high");
+  if (bm.diabetes) promote("high");
+  if (bm.prevCS) promote("moderate");
+  if (bm.thyroid) promote("moderate");
+
+  // ── 3. Tag-based risk (existing patient tags) ──
+  if (HIGH_RISK_TAGS.some(t => (patient.tags || []).includes(t))) promote("high");
+  if (MOD_RISK_TAGS.some(t => (patient.tags || []).includes(t))) promote("moderate");
+
+  // ── 4. Visit-based vitals & notes ──
+  if (patient.visits) {
+    for (const v of patient.visits) {
+      if (v.bpFlag === "severe") promote("high");
+      if (v.bpFlag === "high") promote("moderate");
+
+      if (v.oedema === "Moderate (++)" || v.oedema === "Severe (+++)") {
+        promote("high");
+      } else if (v.oedema === "Mild (+)") {
+        promote("moderate");
+      }
+
+      const text = `${v.findings || ""} ${v.plan || ""} ${v.examNotes || ""}`.toLowerCase();
+
+      if (
+        text.includes("pv bleeding") ||
+        text.includes("severe headache") ||
+        text.includes("epigastric pain") ||
+        text.includes("visual changes") ||
+        text.includes("eclampsia") ||
+        text.includes("absent fetal movement") ||
+        text.includes("reduced fetal movement") ||
+        text.includes("severe hypertension")
+      ) {
+        promote("high");
+      } else if (
+        text.includes("pv discharge") ||
+        text.includes("pelvic pain") ||
+        text.includes("mild oedema") ||
+        text.includes("contractions")
+      ) {
+        promote("moderate");
+      }
+    }
+  }
+
+  // ── 5. Lab-based risk ──
+  if (patient.labs) {
+    for (const l of patient.labs) {
+      if (l.status === "abnormal") {
+        const testName = l.test;
+
+        // High Risk Tests — infectious / metabolic
+        if (["HIV (1 & 2)", "HBsAg", "VDRL/RPR (Syphilis)", "HCV",
+          "Fasting Blood Sugar", "OGTT 75g (Fasting)", "OGTT 75g (1 hr)", "OGTT 75g (2 hr)"
+        ].includes(testName)) {
+          promote("high");
+        }
+
+        // Haemoglobin checks
+        if (testName === "Haemoglobin") {
+          const hb = parseFloat(l.value);
+          if (!isNaN(hb)) {
+            if (hb < 7.0) promote("high");
+            else if (hb < 11.0) promote("moderate");
+          } else {
+            promote("moderate");
+          }
+        }
+
+        // Any other abnormal lab → at least moderate
+        promote("moderate");
+      }
+    }
+  }
+
+  return risk;
+}
+
 /* ─── Risk config ────────────────────────────────────────────────── */
 export const HIGH_RISK_TAGS = [
   "GDM", "PIH", "Rh Negative", "Severe Anaemia", "Twin Pregnancy", "Placenta Previa",
@@ -111,6 +259,78 @@ export const TAG_PILL = {
   "Thyroid": "bg-teal-50 text-teal-700 ring-1 ring-teal-200",
   "Elderly Gravida": "bg-purple-50 text-purple-700 ring-1 ring-purple-200",
 };
+
+/**
+ * Consolidates tags, medical history, and obstetric risks into a single array of items.
+ * Each item has { label: string, risk: 'high' | 'moderate' | 'low' }.
+ */
+export function getPatientConditions(patient) {
+  if (!patient) return [];
+  const items = [];
+  const seen = new Set();
+
+  const add = (label, risk) => {
+    if (!label) return;
+    const l = label.trim();
+    if (!seen.has(l)) {
+      items.push({ label: l, risk });
+      seen.add(l);
+    }
+  };
+
+  // 1. Tags
+  (patient.tags || []).forEach((t) => {
+    let risk = "low";
+    if (HIGH_RISK_TAGS.includes(t)) risk = "high";
+    else if (MOD_RISK_TAGS.includes(t)) risk = "moderate";
+    add(t, risk);
+  });
+
+  // 2. Registration/Basic Medical flags
+  const bm = patient.basicMedical || {};
+  if (bm.highBP) add("High BP", "high");
+  if (bm.diabetes) add("Diabetes", "high");
+  if (bm.thyroid) add("Thyroid", "moderate");
+  if (bm.prevCS) add("Prev CS", "moderate");
+
+  // 3. Maternal health evaluation (First Visit)
+  if (patient.firstVisit?.completed) {
+    const fv = patient.firstVisit;
+    const med = fv.medicalHistory || {};
+    const ob = fv.obstetricHistory || {};
+    const ros = fv.reviewOfSystems || {};
+
+    // Medical
+    if (med.hypertension) add("HTN", "high");
+    if (med.diabetes) add("DM", "high");
+    if (med.heartDisease) add("Heart Disease", "high");
+    if (med.hiv) add("HIV", "high");
+    if (med.hbLevel && parseFloat(med.hbLevel) < 7) add("Severe Anaemia", "high");
+
+    // Obstetric flags
+    OB_RISK_FLAGS.forEach((f) => {
+      if (ob[f.key]) add(f.label.replace("Previous ", "Prev "), f.risk);
+    });
+
+    // ROS Danger Symptoms
+    if (ros.pvBleeding) add("PV Bleeding", "high");
+    if (ros.fetalMovements) add("Reduced Fetal Movement", "high");
+    if (ros.contractions) add("Preterm Contractions", "high");
+  }
+
+  // Support for generic obstetricFlags if firstVisit not used
+  if (patient.obstetricFlags) {
+    OB_RISK_FLAGS.forEach((f) => {
+      if (patient.obstetricFlags[f.key]) add(f.label.replace("Previous ", "Prev "), f.risk);
+    });
+  }
+
+  // Sort by risk: high -> moderate -> low
+  const riskOrder = { high: 0, moderate: 1, low: 2 };
+  items.sort((a, b) => riskOrder[a.risk] - riskOrder[b.risk]);
+
+  return items;
+}
 
 export const STATUS_PILL = {
   normal: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
@@ -240,19 +460,38 @@ export const BASIC_MEDICAL_FLAGS = [
 /* ─── Auto-risk from first visit history ─────────────────────────── */
 export function autoRiskFromFirstVisit(firstVisit = {}) {
   if (!firstVisit || !firstVisit.completed) return null;
+  const ros = firstVisit.reviewOfSystems || {};
   const med = firstVisit.medicalHistory || {};
   const ob = firstVisit.obstetricHistory || {};
+
+  // HIGH RISK conditions
   const highConditions = [
+    // Danger symptoms from ROS
+    ros.pvBleeding, ros.fetalMovements, ros.contractions,
+    ros.headache && ros.visualDisturbance,
+    ros.headache && ros.epigastricPain,
+    ros.oedema && med.hypertension,
+    // Bad Obstetric History
+    ob.prevPPH, ob.prevPreterm, ob.prevStillbirth, ob.prevEclampsia,
+    ob.prevNeonatalDeath, ob.prevCongenitalAnomaly,
+    ob.prevAbortion2Plus, ob.prevSevereAnaemia,
+    // Serious Medical Disorders
     med.hypertension, med.diabetes, med.heartDisease,
-    med.sickleCell, med.hiv, med.hepatitisB, med.hepatitisC,
-    ob.prevCS, ob.prevPPH, ob.prevStillbirth, ob.prevEclampsia,
-    ob.prevPreterm, ob.prevNeonatalDeath,
+    med.sle, med.sickleCell, med.hiv, med.hepatitisB, med.hepatitisC,
+    med.tb, med.kidneyLiver, med.cysticFibrosis, med.epilepsy,
   ];
+
+  // MODERATE RISK conditions
   const modConditions = [
-    med.asthma, med.epilepsy, med.thyroid, med.kidneyLiver,
-    med.tb, ob.prevAbortion2Plus, ob.prevForceps,
-    ob.prevCongenitalAnomaly, ob.prevSevereAnaemia,
+    // Symptoms from ROS
+    ros.pvDischarge, ros.pelvicPain, ros.dyspareunia,
+    ros.oedema && !med.hypertension,
+    // Past obstetric
+    ob.prevCS, ob.prevForceps, ob.prevGDM,
+    // Controlled diseases
+    med.asthma, med.thyroid,
   ];
+
   if (highConditions.some(Boolean)) return "high";
   if (modConditions.some(Boolean)) return "moderate";
   return "low";
@@ -317,6 +556,27 @@ export function getLabUnit(name) {
   return getLabMeta(name)?.unit ?? "";
 }
 
+export function getLabOptions(name) {
+  if (name === "Urine Protein") return [
+    "Negative (0 mg/dL)",
+    "Trace (10–20 mg/dL)",
+    "+ (~30 mg/dL)",
+    "++ (~100 mg/dL)",
+    "+++ (~300 mg/dL)",
+    "++++ (≥1000 mg/dL)"
+  ];
+  if (name === "Urine Sugar") return [
+    "Negative (0 mg/dL)",
+    "Trace (~100 mg/dL)",
+    "+ (~250 mg/dL)",
+    "++ (~500 mg/dL)",
+    "+++ (~1000 mg/dL)"
+  ];
+  if (["HIV (1 & 2)", "HBsAg", "VDRL/RPR (Syphilis)", "HCV"].includes(name)) return ["Negative", "Positive"];
+  if (["Ultrasound (Dating)", "Anomaly Scan", "Growth Scan", "Doppler Study"].includes(name)) return ["Normal", "Abnormal Findings"];
+  return null;
+}
+
 export function autoLabStatus(name, value) {
   const meta = getLabMeta(name);
 
@@ -335,10 +595,18 @@ export function autoLabStatus(name, value) {
       v.includes("positive") ||
       v.includes("reactive") ||
       v.includes("detected") ||
-      v.includes("++") ||
-      v === "+"
+      v.includes("+") ||
+      v.includes("trace") ||
+      v.includes("abnormal")
     ) {
+      if (name === "Urine Protein" && v.includes("trace")) {
+        return "normal"; // Trace is usually normal for Urine Protein
+      }
       return "abnormal";
+    }
+
+    if (v.includes("negative") || v.includes("normal") || v.includes("non-reactive") || v === "none") {
+      return "normal";
     }
 
     return "normal";
@@ -367,7 +635,15 @@ export function bpFlag(bp) {
   if (sys >= 160 || dia >= 110) return "severe";
   if (sys >= 140 || dia >= 90) return "high";
   if (sys < 90 || dia < 60) return "low";
-  return null;
+  return "normal";
+}
+
+export function pulseFlag(pulse) {
+  if (!pulse) return null;
+  const p = parseInt(pulse, 10);
+  if (p < 60) return "low";
+  if (p > 100) return "high";
+  return "normal";
 }
 
 export function fetalHRFlag(fhr) {
@@ -375,6 +651,6 @@ export function fetalHRFlag(fhr) {
   const n = parseInt(fhr, 10);
   if (n < 110) return "bradycardia";
   if (n > 160) return "tachycardia";
-  return null;
+  return "normal";
 }
 

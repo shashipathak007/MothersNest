@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card.jsx";
 import { RiskBadge, TagChip } from "../ui/Badge.jsx";
-import { fmtDate } from "../../utils/helpers.js";
+import { fmtDate, getPatientConditions } from "../../utils/helpers.js";
 
 const RISK_BORDER = {
-  high:     "#f43f5e",
+  high: "#f43f5e",
   moderate: "#f59e0b",
-  low:      "#10b981",
+  low: "#10b981",
 };
 
 export default function PatientCardMobile({ patient }) {
@@ -15,8 +15,11 @@ export default function PatientCardMobile({ patient }) {
   return (
     <Card
       className="p-4 cursor-pointer active:scale-[0.99] transition-transform border-l-4"
-      style={{ borderLeftColor: RISK_BORDER[patient.riskLevel] ?? "#94a3b8" }}
+      style={{ borderLeftColor: RISK_BORDER[patient.riskLevel] ?? "#94a3b8", touchAction: "manipulation" }}
       onClick={() => navigate(`/patient/${patient.id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") navigate(`/patient/${patient.id}`); }}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
@@ -27,10 +30,25 @@ export default function PatientCardMobile({ patient }) {
       </div>
 
       <div className="flex flex-wrap gap-1 mb-3">
-        {patient.tags.slice(0, 3).map((t) => <TagChip key={t} label={t} />)}
-        {patient.tags.length > 3 && (
-          <span className="text-[11px] text-stone-400 self-center">+{patient.tags.length - 3}</span>
-        )}
+        {(() => {
+          const items = getPatientConditions(patient);
+          if (items.length === 0) return <span className="text-xs text-stone-300">No conditions flagged</span>;
+          const displayed = items.slice(0, 2);
+          const remainingHighMod = items.slice(2).filter(i => i.risk === "high" || i.risk === "moderate").length;
+
+          return (
+            <>
+              {displayed.map((it) => (
+                <TagChip key={it.label} label={it.label} risk={it.risk} />
+              ))}
+              {remainingHighMod > 0 && (
+                <span className="text-[11px] font-bold text-rose-500 self-center ml-1">
+                  +{remainingHighMod}
+                </span>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       <div className="flex items-center justify-between text-xs text-stone-400">
