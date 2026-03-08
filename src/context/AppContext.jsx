@@ -14,7 +14,7 @@ const SEED = [
     basicMedical: { thyroid: true, highBP: true, diabetes: true, prevCS: true },
     allergies: "Dust, Pollen",
     gravida: 3, para: 0,
-    lmp: "2025-08-24", edd: "2026-05-31", ga: "27+0",
+    lmp: "2025-08-24", edd: "2026-05-31", ga: "28+0",
     // Matches MOD_RISK_TAGS
     tags: ["Thyroid", "Elderly Gravida"],
     riskLevel: "moderate",
@@ -46,7 +46,7 @@ const SEED = [
     basicMedical: {},
     allergies: "None",
     gravida: 1, para: 0,
-    lmp: "2025-10-26", edd: "2026-08-02", ga: "18+0",
+    lmp: "2025-10-26", edd: "2026-08-02", ga: "19+0",
     // No tags from your config apply here
     tags: [],
     riskLevel: "low",
@@ -78,7 +78,7 @@ const SEED = [
     basicMedical: { diabetes: false },
     allergies: "Sulfa drugs",
     gravida: 1, para: 0,
-    lmp: "2025-08-10", edd: "2026-05-17", ga: "29+0",
+    lmp: "2025-08-10", edd: "2026-05-17", ga: "29+4",
     // Matches HIGH_RISK_TAGS
     tags: ["Twin Pregnancy"],
     riskLevel: "high",
@@ -102,14 +102,14 @@ const SEED = [
     id: "MN-004",
     name: "Priya Sharma", age: 28, phone: "9876543210",
     address: "Dhangadhi 5, Kailalis",
-    bloodGroup: "B−", religion: "Hindu", ethnicity: "Brahmin",
+    bloodGroup: "B+", religion: "Hindu", ethnicity: "Brahmin",
     education: "Graduate", occupation: "Teacher",
     weight: "58", height: "158",
     partner: { name: "Rahul Sharma", age: 32, phone: "9876500000", occupation: "Engineer", education: "Post Graduate" },
     basicMedical: { prevCS: true, diabetes: false, highBP: false, thyroid: false },
     allergies: "Penicillin",
     gravida: 2, para: 1,
-    lmp: "2025-12-21", edd: "2026-09-27", ga: "10+0", // GA: 10 Weeks
+    lmp: "2025-12-21", edd: "2026-09-27", ga: "11+0",
     tags: ["Rh Negative"],
     riskLevel: "high",
     registeredOn: "2026-02-10",
@@ -167,7 +167,7 @@ const SEED = [
     basicMedical: {},
     allergies: "",
     gravida: 1, para: 0,
-    lmp: "2025-11-16", edd: "2026-08-23", ga: "15+0", // GA: 15 Weeks
+    lmp: "2025-11-16", edd: "2026-08-23", ga: "16+0",
     tags: ["PIH"], riskLevel: "moderate", registeredOn: "2026-01-01",
     firstVisit: {
       completed: true,
@@ -210,7 +210,7 @@ const SEED = [
     basicMedical: {},
     allergies: "",
     gravida: 1, para: 0,
-    lmp: "2025-08-03", edd: "2026-05-10", ga: "30+0", // GA: 30 Weeks
+    lmp: "2025-08-03", edd: "2026-05-10", ga: "31+0",
     tags: [], riskLevel: "low", registeredOn: "2026-01-15",
     firstVisit: null,
     visits: [
@@ -231,7 +231,7 @@ const SEED = [
     basicMedical: {},
     allergies: "",
     gravida: 1, para: 0,
-    lmp: "2025-06-29", edd: "2026-04-05", ga: "35+0", // GA: 35 Weeks
+    lmp: "2025-06-29", edd: "2026-04-05", ga: "36+0",
     tags: ["PIH"], riskLevel: "moderate", registeredOn: "2025-10-01",
     firstVisit: {
       completed: true,
