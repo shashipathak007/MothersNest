@@ -315,18 +315,9 @@ export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
             ))}
           </FormSelect>
 
-          <FormSelect
-            label="Occupation"
-            value={p?.occupation || ""}
-            onChange={(e) =>
-              setPartner("occupation", e.target.value)
-            }
-          >
-            <option value="">Select</option>
-            {OCCUPATIONS.map((o) => (
-              <option key={o}>{o}</option>
-            ))}
-          </FormSelect>
+
+
+         
 
           <FormInput
             label="Medical Conditions"
