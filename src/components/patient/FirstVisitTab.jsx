@@ -67,10 +67,10 @@ function FirstVisitReadView({ fv }) {
                 </Card>
             )}
 
-            {/* Presenting Complaints */}
+            {/* Presenting Complaints (legacy, show if exists) */}
             {fv.presentingComplaints && (
                 <Card className="p-4">
-                    <SectionLabel>Presenting Complaints</SectionLabel>
+                    <SectionLabel>Presenting Complaints (from initial evaluation)</SectionLabel>
                     <p className="text-sm text-stone-700 leading-relaxed">{fv.presentingComplaints}</p>
                     {fv.historyOfComplaints && (
                         <div className="mt-3">
@@ -111,17 +111,6 @@ function FirstVisitReadView({ fv }) {
                     {fv.obstetricHistory.detailedHistory && (
                         <p className="text-sm text-stone-700 leading-relaxed bg-stone-50 rounded-xl p-3 mb-3 whitespace-pre-line">{fv.obstetricHistory.detailedHistory}</p>
                     )}
-                    <div className="flex flex-wrap gap-2">
-                        {[
-                            ["prevCS", "Previous CS"], ["prevPPH", "Prev PPH"], ["prevPreterm", "Prev Preterm"],
-                            ["prevStillbirth", "Prev Stillbirth"], ["prevEclampsia", "Prev Eclampsia/PIH"],
-                            ["prevGDM", "Prev GDM"], ["prevNeonatalDeath", "Prev Neonatal Death"],
-                            ["prevCongenitalAnomaly", "Prev Congenital Anomaly"], ["prevForceps", "Prev Forceps/Vacuum"],
-                            ["prevAbortion2Plus", "Prev Abortion ≥2"], ["prevSevereAnaemia", "Prev Severe Anaemia"],
-                        ].filter(([k]) => fv.obstetricHistory[k]).map(([k, label]) => (
-                            <span key={k} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-100 text-rose-700">⚠ {label}</span>
-                        ))}
-                    </div>
                     {/* Previous pregnancies — detailed read view */}
                     {fv.obstetricHistory.previousPregnancies?.length > 0 && (
                         <div className="mt-4 space-y-3">
@@ -169,6 +158,20 @@ function FirstVisitReadView({ fv }) {
                                     {preg.outcome === "Neonatal Death" && preg.nndCause && (
                                         <p className="text-red-700 mt-1"><strong>NND Cause:</strong> {preg.nndCause}</p>
                                     )}
+                                    {/* Flags / Conditions for this pregnancy */}
+                                    <div className="mt-2 pt-2 border-t border-stone-200">
+                                        <div className="flex flex-wrap gap-2">
+                                            {[
+                                                ["prevCS", "Caesarean Section"], ["prevPPH", "PPH"], ["prevPreterm", "Preterm Birth"],
+                                                ["prevStillbirth", "Stillbirth"], ["prevEclampsia", "Eclampsia/PIH"],
+                                                ["prevGDM", "GDM"], ["prevNeonatalDeath", "Neonatal Death"],
+                                                ["prevCongenitalAnomaly", "Congenital Anomaly"], ["prevForceps", "Forceps/Vacuum"],
+                                                ["prevAbortion2Plus", "Abortion (≥2)"], ["prevSevereAnaemia", "Severe Anaemia"],
+                                            ].filter(([k]) => preg[k]).map(([k, label]) => (
+                                                <span key={k} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-100 text-rose-700">⚠ {label}</span>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -301,7 +304,7 @@ function FirstVisitReadView({ fv }) {
 
             {fv.gbvScreening && (
                 <Card className="p-4">
-                    <SectionLabel>Gender-Based Violence Screening</SectionLabel>
+                    <SectionLabel>Gender-Based Violence Screening (from initial evaluation)</SectionLabel>
                     <p className="text-sm text-stone-700">{fv.gbvScreening}</p>
                 </Card>
             )}
@@ -316,7 +319,14 @@ function FirstVisitReadView({ fv }) {
                         <KVRow label="Pulse" value={fv.examination.pulse} />
                         <KVRow label="Weight" value={fv.examination.weight ? `${fv.examination.weight} kg` : "—"} />
                         <KVRow label="Height" value={fv.examination.height ? `${fv.examination.height} cm` : "—"} />
-                        <KVRow label="BMI" value={fv.examination.bmi} />
+                        <KVRow label="BMI" value={(() => {
+                            const b = fv.examination.bmi;
+                            if (!b) return "—";
+                            const v = parseFloat(b);
+                            if (v < 18.5) return <span className="text-rose-700 font-bold">{b} — Low</span>;
+                            if (v > 24.9) return <span className="text-rose-700 font-bold">{b} — High</span>;
+                            return b;
+                        })()} />
                         <KVRow label="Breast Exam" value={fv.examination.breastExam} />
                         <KVRow label="Abdominal Exam" value={fv.examination.abdominalExam} />
                         <KVRow label="Fundal Height" value={fv.examination.fundalHeight ? `${fv.examination.fundalHeight} cm` : "—"} />
@@ -336,6 +346,9 @@ const EMPTY_PREGNANCY = {
     babySex: "", babyWeight: "", apgar: "", timeOfBirth: "",
     congenitalAnomalies: "", babyComplications: "", immunisations: "", breastfeeding: "",
     stillbirthType: "", nndCause: "",
+    prevCS: false, prevPPH: false, prevPreterm: false,
+    prevStillbirth: false, prevEclampsia: false, prevGDM: false, prevNeonatalDeath: false,
+    prevCongenitalAnomaly: false, prevForceps: false, prevAbortion2Plus: false, prevSevereAnaemia: false,
 };
 
 const EMPTY_ABORTION = {
@@ -343,44 +356,44 @@ const EMPTY_ABORTION = {
 };
 
 /* ─── Empty first visit form state ────────────────────────────────── */
-const EMPTY_FORM = (patient) => ({
-    presentingComplaints: "",
-    historyOfComplaints: "",
-    reviewOfSystems: {
-        pvBleeding: false, pvDischarge: false, pelvicPain: false,
-        dysmenorrhea: false, dyspareunia: false, fetalMovements: false,
-        contractions: false, headache: false, visualDisturbance: false,
-        epigastricPain: false, oedema: false,
-    },
-    menstrualHistory: { cycleNature: "", lmp: patient.lmp || "", regularCycles: true },
-    obstetricHistory: {
-        prevCS: !!patient.basicMedical?.prevCS, prevPPH: false, prevPreterm: false,
-        prevStillbirth: false, prevEclampsia: false, prevGDM: false, prevNeonatalDeath: false,
-        prevCongenitalAnomaly: false, prevForceps: false, prevAbortion2Plus: false, prevSevereAnaemia: false,
-        detailedHistory: "",
-        previousPregnancies: [],
-        abortions: [],
-    },
-    medicalHistory: {
-        asthma: false, epilepsy: false, hypertension: !!patient.basicMedical?.highBP,
-        heartDisease: false, diabetes: !!patient.basicMedical?.diabetes, diabetesType: "",
-        sle: false, sickleCell: false, hiv: false, hepatitisB: false, hepatitisC: false,
-        tb: false, thyroid: !!patient.basicMedical?.thyroid, kidneyLiver: false,
-        cysticFibrosis: false, other: "",
-    },
-    treatmentHistory: { prevAdmission: "", bloodTransfusion: false, drugAllergy: patient.allergies || "", tetanusImmunised: false, rhImmunoglobulin: false, currentMedications: "" },
-    surgicalHistory: "",
-    familyHistory: { diabetes: false, hypertension: false, geneticDisorder: false, cancers: false, chronicInfections: false, psychiatricIllness: false, details: "" },
-    socialHistory: { employment: patient.occupation || "", homeCircumstances: "", financialCondition: "", domesticViolence: false, maritalStatus: "" },
-    personalHistory: { smoking: false, alcohol: false, drugs: false, prenatalCare: false },
-    contraceptiveHistory: "",
-    nutritionalHistory: { dietType: "", foodTaboos: "" },
-    gynaecologicalHistory: "",
-    stiHistory: "",
-    gbvScreening: "",
-    examination: { generalCondition: "", bp: "", pulse: "", weight: patient.weight || "", height: patient.height || "", bmi: "", breastExam: "", abdominalExam: "", fundalHeight: "", pelvicExam: "" },
-    summary: "",
-});
+const EMPTY_FORM = (patient) => {
+    const prev = patient.prevFirstVisit || {};
+    return {
+        presentingComplaints: "",
+        historyOfComplaints: "",
+        reviewOfSystems: {
+            pvBleeding: false, pvDischarge: false, pelvicPain: false,
+            dysmenorrhea: false, dyspareunia: false, fetalMovements: false,
+            contractions: false, headache: false, visualDisturbance: false,
+            epigastricPain: false, oedema: false,
+        },
+        menstrualHistory: { cycleNature: prev.menstrualHistory?.cycleNature || "", lmp: patient.lmp || "", regularCycles: prev.menstrualHistory?.regularCycles ?? true },
+        obstetricHistory: prev.obstetricHistory ? { ...prev.obstetricHistory } : {
+            detailedHistory: "",
+            previousPregnancies: [],
+            abortions: [],
+        },
+        medicalHistory: prev.medicalHistory ? { ...prev.medicalHistory } : {
+            asthma: false, epilepsy: false, hypertension: !!patient.basicMedical?.highBP,
+            heartDisease: false, diabetes: !!patient.basicMedical?.diabetes, diabetesType: "",
+            sle: false, sickleCell: false, hiv: false, hepatitisB: false, hepatitisC: false,
+            tb: false, thyroid: !!patient.basicMedical?.thyroid, kidneyLiver: false,
+            cysticFibrosis: false, other: "",
+        },
+        treatmentHistory: prev.treatmentHistory ? { ...prev.treatmentHistory, currentMedications: "" } : { prevAdmission: "", bloodTransfusion: false, drugAllergy: patient.allergies || "", tetanusImmunised: false, rhImmunoglobulin: false, currentMedications: "" },
+        surgicalHistory: prev.surgicalHistory || "",
+        familyHistory: prev.familyHistory ? { ...prev.familyHistory } : { diabetes: false, hypertension: false, geneticDisorder: false, cancers: false, chronicInfections: false, psychiatricIllness: false, details: "" },
+        socialHistory: prev.socialHistory ? { ...prev.socialHistory, employment: patient.occupation || "" } : { employment: patient.occupation || "", homeCircumstances: "", financialCondition: "", domesticViolence: false, maritalStatus: "" },
+        personalHistory: prev.personalHistory ? { ...prev.personalHistory } : { smoking: false, alcohol: false, drugs: false, prenatalCare: false },
+        contraceptiveHistory: prev.contraceptiveHistory || "",
+        nutritionalHistory: prev.nutritionalHistory ? { ...prev.nutritionalHistory } : { dietType: "", foodTaboos: "" },
+        gynaecologicalHistory: prev.gynaecologicalHistory || "",
+        stiHistory: prev.stiHistory || "",
+        gbvScreening: "",
+        examination: { generalCondition: "", bp: "", pulse: "", weight: patient.weight || "", height: patient.height || "", bmi: "", breastExam: "", abdominalExam: "", fundalHeight: "", pelvicExam: "" },
+        summary: "",
+    };
+};
 
 /* ─── Editable first visit form ───────────────────────────────────── */
 function FirstVisitForm({ patient, onSaved }) {
@@ -456,24 +469,8 @@ function FirstVisitForm({ patient, onSaved }) {
                 </div>
             </div>
 
-            {/* 1. Presenting Complaints */}
-            <Section title="Presenting Complaints"  defaultOpen>
-                <FormTextarea label="Presenting Complaints *" value={form.presentingComplaints} onChange={e => set("presentingComplaints", e.target.value)} placeholder="Symptoms that bring the woman in..." rows={3} />
-                <div className="mt-3">
-                    <FormTextarea label="History of Presenting Complaints" value={form.historyOfComplaints} onChange={e => set("historyOfComplaints", e.target.value)} placeholder="Chronological order, severity, aggravating/relieving factors..." rows={3} />
-                </div>
-                <div className="mt-4">
-                    <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-3">Relevant Review of Systems</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {ROS_ITEMS.map(([key, label]) => (
-                            <BoolToggle key={key} label={label} value={form.reviewOfSystems[key]} onChange={v => setROS(key, v)} />
-                        ))}
-                    </div>
-                </div>
-            </Section>
-
-            {/* 2. Menstrual History */}
-            <Section title="Menstrual History" >
+            {/* 1. Menstrual History (was section 2, now first) */}
+            <Section title="Menstrual History" defaultOpen>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
                         <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">LMP </label>
@@ -491,13 +488,6 @@ function FirstVisitForm({ patient, onSaved }) {
 
             {/* 3. Previous Obstetric History */}
             <Section title="Previous Obstetric History" >
-                <p className="text-xs text-stone-400 mb-3">Select any complications from previous pregnancies.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-                    {OB_FLAGS.map(([key, label]) => (
-                        <BoolToggle key={key} label={label} value={form.obstetricHistory[key]} onChange={v => setOb(key, v)} />
-                    ))}
-                </div>
-
                 {/* General OB summary (optional) */}
                 <FormTextarea label="Summary Obstetric History" value={form.obstetricHistory.detailedHistory} onChange={e => setOb("detailedHistory", e.target.value)}
                     placeholder="e.g. G3P2L1A1 — brief summary..." rows={2} />
@@ -631,6 +621,16 @@ function FirstVisitForm({ patient, onSaved }) {
                                         <FormInput label="Cause of Early NND (if known)" value={preg.nndCause} onChange={e => setPregField("nndCause", e.target.value)} placeholder="Prematurity, Birth asphyxia, Sepsis..." />
                                     </div>
                                 )}
+
+                                {/* Complications Checkboxes */}
+                                <div className="mt-3 pt-3 border-t border-stone-200">
+                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Complications Recorded</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                        {OB_FLAGS.map(([key, label]) => (
+                                            <BoolToggle key={key} label={label} value={preg[key]} onChange={v => setPregField(key, v)} />
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         );
                     })}
@@ -830,12 +830,7 @@ function FirstVisitForm({ patient, onSaved }) {
                     rows={2} />
             </Section>
 
-            {/* 14. Gender-Based Violence Screening */}
-            <Section title="Screening — Gender-Based Violence" >
-                <FormTextarea label="GBV Screening Notes" value={form.gbvScreening} onChange={e => set("gbvScreening", e.target.value)}
-                    placeholder="Screening results, concerns disclosed, counselling done..."
-                    rows={2} />
-            </Section>
+
 
             {/* 15. Examination */}
             <Section title="Physical Examination" >
@@ -847,7 +842,9 @@ function FirstVisitForm({ patient, onSaved }) {
                     <FormInput label="Height (cm)" type="number" value={form.examination.height} onChange={e => setExam("height", e.target.value)} placeholder="155" />
                     <div className="flex flex-col gap-1.5">
                         <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">BMI </label>
-                        <div className="px-3.5 py-2.5 text-sm bg-blue-50 border border-blue-200 rounded-xl text-blue-800 font-semibold">{examBMI || "—"}</div>
+                        <div className={`px-3.5 py-2.5 text-sm border rounded-xl font-semibold ${examBMI && parseFloat(examBMI) < 18.5 ? "bg-rose-50 border-rose-200 text-rose-700" : examBMI && parseFloat(examBMI) > 24.9 ? "bg-rose-50 border-rose-200 text-rose-700" : "bg-blue-50 border-blue-200 text-blue-800"}`}>
+                            {examBMI ? `${examBMI}${parseFloat(examBMI) < 18.5 ? " — Low" : parseFloat(examBMI) > 24.9 ? " — High" : ""}` : "—"}
+                        </div>
                     </div>
                     <FormInput label="Breast Exam" value={form.examination.breastExam} onChange={e => setExam("breastExam", e.target.value)} placeholder="Normal / Abnormal" />
                     <FormInput label="Abdominal Exam" value={form.examination.abdominalExam} onChange={e => setExam("abdominalExam", e.target.value)} placeholder="Uterus size, tenderness..." />
@@ -857,7 +854,7 @@ function FirstVisitForm({ patient, onSaved }) {
             </Section>
 
             {/* 16. Summary */}
-            <Section title="Summary of History"  defaultOpen>
+            <Section title="Summary of History" defaultOpen>
                 <FormTextarea label="Summary" value={form.summary} onChange={e => set("summary", e.target.value)}
                     placeholder="Patient name, age, time since marriage, gravida, parity, miscarriages, live children, weeks of gestation, associated conditions. Normal vs high-risk assessment."
                     rows={4} />
@@ -876,7 +873,7 @@ function FirstVisitForm({ patient, onSaved }) {
 
             {/* Save */}
             <div className="flex justify-end gap-3 pt-4 border-t border-stone-200">
-                <Button variant="success" onClick={handleSave} disabled={!form.presentingComplaints.trim()}>
+                <Button variant="success" onClick={handleSave}>
                     ✓ Complete Maternal Health Evaluation
                 </Button>
             </div>

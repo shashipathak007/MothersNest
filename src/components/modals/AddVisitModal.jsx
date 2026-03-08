@@ -34,6 +34,14 @@ export default function AddVisitModal({ patient, onClose }) {
     presentation: lastV?.presentation || "",
     findings: "", plan: "", examNotes: "",
     tests: [],
+    // Per-visit complaints & screening
+    presentingComplaints: "",
+    reviewOfSystems: {
+      pvBleeding: false, pvDischarge: false, pelvicPain: false,
+      fetalMovements: false, contractions: false, headache: false,
+      visualDisturbance: false, epigastricPain: false, oedemaROS: false,
+    },
+    gbvScreening: "",
   });
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -94,11 +102,12 @@ export default function AddVisitModal({ patient, onClose }) {
     return calcBMI(form.weight, heightCm);
   }, [form.weight, heightCm]);
 
-  const bmiStatusClass = useMemo(() => {
-    if (!bmi) return "bg-stone-50 border-stone-200 text-stone-500";
+  const bmiStatus = useMemo(() => {
+    if (!bmi) return { cls: "bg-stone-50 border-stone-200 text-stone-500", label: "" };
     const val = parseFloat(bmi);
-    if (val < 18.5 || val > 24.9) return "bg-rose-50 border-rose-200 text-rose-700 font-bold";
-    return "bg-emerald-50 border-emerald-200 text-emerald-700 font-bold";
+    if (val < 18.5) return { cls: "bg-rose-50 border-rose-200 text-rose-700 font-bold", label: "Low" };
+    if (val > 24.9) return { cls: "bg-rose-50 border-rose-200 text-rose-700 font-bold", label: "High" };
+    return { cls: "bg-emerald-50 border-emerald-200 text-emerald-700 font-bold", label: "" };
   }, [bmi]);
 
   const bpF = bpFlag(form.bp);
@@ -156,6 +165,37 @@ export default function AddVisitModal({ patient, onClose }) {
           </FormSelect>
         </div>
 
+        {/* Presenting Complaints & ROS */}
+        <div>
+          <SectionLabel>Presenting Complaints</SectionLabel>
+          <FormTextarea
+            label="Presenting Complaints"
+            value={form.presentingComplaints}
+            onChange={e => set("presentingComplaints", e.target.value)}
+            placeholder="Current symptoms..."
+            rows={2}
+          />
+          <div className="mt-3">
+            <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mb-2">Review of Systems</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                ["pvBleeding", "PV Bleeding"], ["pvDischarge", "PV Discharge"], ["pelvicPain", "Pelvic Pain"],
+                ["fetalMovements", "Reduced Fetal Movements"], ["contractions", "Contractions"],
+                ["headache", "Headache"], ["visualDisturbance", "Visual Disturbance"],
+                ["epigastricPain", "Epigastric Pain"], ["oedemaROS", "Oedema"],
+              ].map(([key, label]) => (
+                <label key={key} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-xs font-semibold transition-colors ${form.reviewOfSystems[key] ? "bg-rose-50 border-rose-400 text-rose-800" : "bg-stone-50 border-stone-200 text-stone-700 hover:border-stone-300"
+                  }`}>
+                  <input type="checkbox" checked={!!form.reviewOfSystems[key]}
+                    onChange={e => setForm(p => ({ ...p, reviewOfSystems: { ...p.reviewOfSystems, [key]: e.target.checked } }))}
+                    className="w-3.5 h-3.5 accent-rose-600" />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Contact banner */}
         {contact && (
           <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 flex items-center gap-3">
@@ -188,7 +228,7 @@ export default function AddVisitModal({ patient, onClose }) {
               {bpF && bpF !== "normal" && (
                 <p className={`text-[10px] font-bold uppercase ${bpF === "severe" ? "text-rose-600" : bpF === "high" ? "text-orange-600" : "text-amber-600"
                   }`}>
-                  ⚠ {bpF === "severe" ? "Severe HTN!" : bpF === "high" ? "Hypertension" : "Hypotension"}
+                  ⚠ {bpF === "severe" ? "Severe High!" : bpF === "high" ? "High" : "Low"}
                 </p>
               )}
               {bpF === "normal" && (
@@ -202,7 +242,7 @@ export default function AddVisitModal({ patient, onClose }) {
               <input type="number" value={form.pulse} onChange={e => set("pulse", e.target.value)} placeholder="80" className={pulseFieldCls} />
               {pulseF && pulseF !== "normal" && (
                 <p className="text-[10px] font-bold uppercase text-orange-600">
-                  ⚠ {pulseF === "low" ? "Bradycardia (<60)" : "Tachycardia (>100)"}
+                  ⚠ {pulseF === "low" ? "Low (<60)" : "High (>100)"}
                 </p>
               )}
               {pulseF === "normal" && (
@@ -217,8 +257,8 @@ export default function AddVisitModal({ patient, onClose }) {
               <div className="flex items-center gap-2 w-full">
                 <input type="number" placeholder="ft" value={form.heightFt} onChange={e => set("heightFt", e.target.value)} className="w-[60px] px-3 py-2.5 text-sm border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white" />
                 <input type="number" placeholder="in" value={form.heightIn} onChange={e => set("heightIn", e.target.value)} className="w-[60px] px-3 py-2.5 text-sm border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white" />
-                <div className={`flex-1 px-3 py-2.5 text-sm border rounded-xl text-center ${bmiStatusClass}`}>
-                  {bmi ? `${bmi} BMI` : "—"}
+                <div className={`flex-1 px-3 py-2.5 text-sm border rounded-xl text-center ${bmiStatus.cls}`}>
+                  {bmi ? `${bmi} BMI${bmiStatus.label ? ` — ${bmiStatus.label}` : ""}` : "—"}
                 </div>
               </div>
             </div>
@@ -229,7 +269,7 @@ export default function AddVisitModal({ patient, onClose }) {
               <input type="number" value={form.fetalHR} onChange={e => set("fetalHR", e.target.value)} placeholder="140" className={fhrFieldCls} />
               {fhrF && fhrF !== "normal" && (
                 <p className="text-[10px] font-bold uppercase text-orange-600">
-                  ⚠ {fhrF === "bradycardia" ? "Bradycardia (<110)" : "Tachycardia (>160)"}
+                  ⚠ {fhrF === "bradycardia" ? "Low (<110)" : "High (>160)"}
                 </p>
               )}
               {fhrF === "normal" && (
@@ -279,6 +319,18 @@ export default function AddVisitModal({ patient, onClose }) {
               onChange={e => set("plan", e.target.value)}
               placeholder="Continue iron + folic acid, repeat Hb in 4 weeks, next visit at 32 wks..."
               rows={4}
+            />
+          </div>
+
+          {/* GBV Screening */}
+          <div>
+            <SectionLabel>GBV Screening</SectionLabel>
+            <FormTextarea
+              label="Gender-Based Violence Screening"
+              value={form.gbvScreening}
+              onChange={e => set("gbvScreening", e.target.value)}
+              placeholder="Screening results, concerns disclosed..."
+              rows={2}
             />
           </div>
 

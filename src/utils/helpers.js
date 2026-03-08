@@ -29,10 +29,10 @@ export function calcEDD(lmp) {
   return d.toISOString().slice(0, 10);
 }
 
-export function calcGA(lmp) {
+export function calcGA(lmp, targetDate) {
   if (!lmp) return "";
   const lmpDate = new Date(lmp + "T00:00:00");
-  const now = new Date();
+  const now = targetDate ? new Date(targetDate + "T00:00:00") : new Date();
   const diffDays = Math.floor((now - lmpDate) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return "";
   const weeks = Math.floor(diffDays / 7);

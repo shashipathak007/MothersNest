@@ -61,7 +61,7 @@ export default function VisitCard({ visit, isLatest = false }) {
             <span className={`text-xs px-2.5 py-1 rounded-lg ${parseFloat(visit.bmi) < 18.5 || parseFloat(visit.bmi) > 24.9 ? "bg-rose-100 text-rose-800 font-bold" :
               "bg-emerald-100 text-emerald-800 font-bold"
               }`}>
-              BMI {visit.bmi}
+              BMI {visit.bmi}{parseFloat(visit.bmi) < 18.5 ? " — Low" : parseFloat(visit.bmi) > 24.9 ? " — High" : ""}
             </span>
           )}
           {visit.fetalHR && (
@@ -76,15 +76,15 @@ export default function VisitCard({ visit, isLatest = false }) {
           )}
           {visit.oedema && (
             <span className={`text-xs px-2.5 py-1 rounded-lg ${visit.oedema === "None (−)" ? "bg-emerald-100 text-emerald-800 font-bold" :
-                "bg-orange-100 text-orange-700 font-semibold"
+              "bg-orange-100 text-orange-700 font-semibold"
               }`}>
               Oedema {visit.oedema} {visit.oedema === "None (−)" ? "✓" : "⚠"}
             </span>
           )}
           {visit.presentation && (
             <span className={`text-xs px-2.5 py-1 rounded-lg ${visit.presentation === "Cephalic" ? "bg-emerald-100 text-emerald-800 font-bold" :
-                visit.presentation === "Not assessed" ? "bg-stone-100 text-stone-500" :
-                  "bg-orange-100 text-orange-700 font-semibold"
+              visit.presentation === "Not assessed" ? "bg-stone-100 text-stone-500" :
+                "bg-orange-100 text-orange-700 font-semibold"
               }`}>
               {visit.presentation} {visit.presentation === "Cephalic" ? "✓" : visit.presentation !== "Not assessed" ? "⚠" : ""}
             </span>

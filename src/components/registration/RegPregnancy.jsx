@@ -4,7 +4,7 @@ import SectionLabel from "../ui/SectionLabel.jsx";
 import Card from "../ui/Card.jsx";
 import { calcEDD, calcGA } from "../../utils/helpers.js";
 
-export default function RegPregnancy({ form, set }) {
+export default function RegPregnancy({ form, set, patientMode }) {
   // Auto-calculate EDD and GA when LMP changes
   useEffect(() => {
     if (form.lmp) {
@@ -13,7 +13,7 @@ export default function RegPregnancy({ form, set }) {
     }
   }, [form.lmp]);
 
-  
+
   return (
     <div className="space-y-6">
       <Card className="p-5">
@@ -44,15 +44,17 @@ export default function RegPregnancy({ form, set }) {
       </Card>
 
       {/* Info note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
-        <span className="text-blue-500 text-lg mt-0.5">ℹ</span>
-        <div>
-          <p className="text-sm font-semibold text-blue-800">Detailed History Will Be Taken at First Visit by the Clinician</p>
-          <p className="text-xs text-blue-600 mt-0.5">
-            Comprehensive obstetric, medical, surgical history and screenings will be recorded during the patient's first visit by the clinician.
-          </p>
+      {patientMode !== 'returning' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3">
+          <span className="text-blue-500 text-lg mt-0.5">ℹ</span>
+          <div>
+            <p className="text-sm font-semibold text-blue-800">Detailed History Will Be Taken at First Visit by the Clinician</p>
+            <p className="text-xs text-blue-600 mt-0.5">
+              Comprehensive obstetric, medical, surgical history and screenings will be recorded during the patient's first visit by the clinician.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

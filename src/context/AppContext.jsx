@@ -1,5 +1,5 @@
 import { createContext, useReducer } from "react";
-import { computeOverallRisk } from "../utils/helpers.js";
+import { computeOverallRisk, calcGA } from "../utils/helpers.js";
 
 
 const SEED = [
@@ -215,6 +215,8 @@ const SEED = [
     firstVisit: null,
     visits: [
       { id: "v3a", date: "2026-01-15", type: "ANC 1st Visit", ancContact: 1, ga: "23+4", bp: "112/72", weight: "52.0", height: "155", fetalHR: "156", fundal: "24", findings: "Booked late.", plan: "Routine supplementation.", bpFlag: null, fhrFlag: null },
+      { id: "v3b", date: "2026-02-12", type: "ANC 2nd Visit (16 weeks)", ancContact: 2, ga: "27+4", bp: "110/70", weight: "53.5", fetalHR: "152", fundal: "27", findings: "Active fetal movements.", plan: "Second dose TT given.", bpFlag: null, fhrFlag: null },
+      { id: "v3c", date: "2026-03-05", type: "ANC 3rd Visit (24 weeks)", ancContact: 3, ga: "30+4", bp: "114/72", weight: "55.0", fetalHR: "148", fundal: "30", findings: "Normal growth.", plan: "Birth preparedness counseling.", bpFlag: null, fhrFlag: null },
     ],
     labs: [
       { id: "l3a", test: "Haemoglobin", date: "2026-01-15", value: "11.8", unit: "g/dL", status: "normal" },
@@ -258,6 +260,10 @@ const SEED = [
     },
     visits: [
       { id: "v2a", date: "2026-02-20", type: "ANC 6th Visit", ancContact: 6, ga: "33+5", bp: "142/90", weight: "70.2", fetalHR: "148", fundal: "34", findings: "BP elevated.", plan: "Labetalol started.", bpFlag: "high", fhrFlag: null },
+      { id: "v1-5", date: "2026-01-15", type: "ANC 5th Visit (32 weeks)", ancContact: 5, ga: "28+3", bp: "128/82", weight: "69.0", fetalHR: "142", fundal: "28", findings: "Normal growth.", plan: "Continue supplements.", bpFlag: null, fhrFlag: null },
+      { id: "v1-4", date: "2025-12-10", type: "ANC 4th Visit (28 weeks)", ancContact: 4, ga: "23+2", bp: "124/80", weight: "67.5", fetalHR: "146", fundal: "23", findings: "Active fetal movements.", plan: "Routine monitoring.", bpFlag: null, fhrFlag: null },
+      { id: "v1-3", date: "2025-11-05", type: "ANC 3rd Visit (24 weeks)", ancContact: 3, ga: "18+2", bp: "122/78", weight: "66.0", fetalHR: "144", fundal: "18", findings: "Anomaly scan reviewed. Normal.", plan: "Calcium added.", bpFlag: null, fhrFlag: null },
+      { id: "v1-2", date: "2025-09-30", type: "ANC 2nd Visit (16 weeks)", ancContact: 2, ga: "13+1", bp: "120/78", weight: "64.5", fetalHR: "150", fundal: "-", findings: "Normal early pregnancy.", plan: "Iron/Folic acid.", bpFlag: null, fhrFlag: null },
     ],
     labs: [
       { id: "l2a", test: "Haemoglobin", date: "2026-02-20", value: "10.6", unit: "g/dL", status: "abnormal" },
@@ -266,12 +272,347 @@ const SEED = [
 
 ];
 
+const POSTNATAL_SEED = [
+  {
+    id: "PN-001", name: "Gita Adhikari", age: 27, phone: "9801234567", address: "Dhangadhi 6, Kailali",
+    bloodGroup: "A+", religion: "Hindu", ethnicity: "Chhetri", education: "Higher Secondary (11–12)", occupation: "Homemaker",
+    weight: "65", height: "158", gravida: 2, para: 2,
+    lmp: "2025-05-15", edd: "2026-02-19", ga: "42+0",
+    deliveryDate: "2026-02-20", deliveryTime: "14:30", deliveryMode: "SVD (Spontaneous Vaginal Delivery)", durationOfLabor: "8 hours", maternalComplications: "None", episiotomy: "Yes",
+    babySex: "Male", birthWeight: "3.2", apgar1: "8", apgar5: "9", babyStatus: "Stable", feedingMethod: "Breastfeeding", bfedInitiated: "Yes",
+    dischargeDate: "2026-02-21", followUpDate: "2026-03-20", familyPlanningCounseling: "Done", signsExplained: "Yes", immunization: { bcg: true, opv: true, hepB: true },
+    riskStatus: "low", riskLevel: "low", registeredOn: "2025-08-10", patientType: "postnatal",
+    tags: [], basicMedical: {},
+    partner: { name: "Ramesh Adhikari", age: 30, occupation: "Business" }, allergies: "",
+    firstVisit: {
+      completed: true, completedOn: "2025-08-10",
+      menstrualHistory: { cycleNature: "Regular 28-day", lmp: "2025-05-15", regularCycles: true },
+      obstetricHistory: {
+        prevCS: false, prevPPH: false, detailedHistory: "G2P1L1. First delivery SVD 2023.", previousPregnancies: [
+          { year: "2023", ancAttended: true, placeOfDelivery: "Hospital", ga: "39 weeks", typeOfLabour: "Spontaneous", modeOfDelivery: "SVD (Normal)", complications: "None", babyWeight: "3.0 kg", apgar: "8/9", babySex: "Female", babyComplications: "None" }
+        ]
+      },
+      medicalHistory: { asthma: false, hypertension: false, diabetes: false, thyroid: false },
+      treatmentHistory: { drugAllergy: "", tetanusImmunised: true },
+      familyHistory: { diabetes: false, hypertension: false },
+      socialHistory: { employment: "Homemaker", maritalStatus: "Married" },
+      personalHistory: { smoking: false, alcohol: false },
+      examination: { generalCondition: "Good", bp: "118/74", pulse: "76", weight: "58", height: "158", bmi: "23.2" },
+      summary: "27yo G2P1. Normal pregnancy. Low risk.", autoRisk: "low",
+    },
+    visits: [
+      { id: "pv1-1", date: "2025-12-15", type: "ANC 5th Visit (32 weeks)", ancContact: 5, ga: "30+4", bp: "116/72", weight: "62.0", fetalHR: "142", fundal: "30", findings: "Normal growth.", plan: "Continue supplements.", bpFlag: null, fhrFlag: null },
+      { id: "pv1-2", date: "2026-01-20", type: "ANC 7th Visit (36 weeks)", ancContact: 7, ga: "35+5", bp: "120/78", weight: "64.0", fetalHR: "148", fundal: "35", findings: "Vertex. Engaged.", plan: "Await spontaneous labour.", bpFlag: null, fhrFlag: null },
+    ],
+    labs: [
+      { id: "pl1-1", test: "Haemoglobin", date: "2025-08-10", value: "12.2", unit: "g/dL", status: "normal" },
+      { id: "pl1-2", test: "Blood Group & Rh", date: "2025-08-10", value: "A+", unit: "", status: "normal" },
+    ],
+  },
+  {
+    id: "PN-002", name: "Sarita Bhandari", age: 31, phone: "9812345678", address: "Dhangadhi 3, Kailali",
+    bloodGroup: "B+", religion: "Hindu", ethnicity: "Brahmin", education: "Graduate", occupation: "Teacher",
+    weight: "72", height: "160", gravida: 3, para: 3,
+    lmp: "2025-05-10", edd: "2026-02-14", ga: "43+0",
+    deliveryDate: "2026-02-15", deliveryTime: "09:15", deliveryMode: "LSCS (Cesarean Section)", durationOfLabor: "12 hours", maternalComplications: "Postpartum hemorrhage", episiotomy: "No",
+    babySex: "Female", birthWeight: "2.9", apgar1: "7", apgar5: "9", babyStatus: "Stable", feedingMethod: "Mixed", bfedInitiated: "Yes",
+    dischargeDate: "2026-02-19", followUpDate: "2026-03-15", familyPlanningCounseling: "Done", signsExplained: "Yes", immunization: { bcg: true, opv: true, hepB: true },
+    riskStatus: "high", riskLevel: "high", registeredOn: "2025-07-20", patientType: "postnatal",
+    tags: ["PIH"], basicMedical: { prevCS: true, highBP: true },
+    partner: { name: "Deepak Bhandari", age: 34, occupation: "Government Employee" }, allergies: "Sulfa",
+    firstVisit: {
+      completed: true, completedOn: "2025-07-20",
+      menstrualHistory: { cycleNature: "Regular 30-day", lmp: "2025-05-10", regularCycles: true },
+      obstetricHistory: {
+        prevCS: true, prevPPH: false, prevPreterm: false, prevEclampsia: true, detailedHistory: "G3P2L2. 1st LSCS 2020, 2nd SVD 2022.", previousPregnancies: [
+          { year: "2020", ancAttended: true, placeOfDelivery: "Hospital", ga: "38 weeks", typeOfLabour: "Induced", modeOfDelivery: "LSCS", indication: "Fetal distress", complications: "PIH", babyWeight: "2.8 kg", apgar: "7/9", babySex: "Male" },
+          { year: "2022", ancAttended: true, placeOfDelivery: "Hospital", ga: "39 weeks", typeOfLabour: "Spontaneous", modeOfDelivery: "SVD (Normal)", complications: "None", babyWeight: "3.2 kg", apgar: "8/9", babySex: "Female" },
+        ]
+      },
+      medicalHistory: { hypertension: true, diabetes: false, thyroid: false, asthma: false },
+      treatmentHistory: { drugAllergy: "Sulfa", tetanusImmunised: true, bloodTransfusion: true },
+      familyHistory: { hypertension: true, diabetes: true },
+      socialHistory: { employment: "Teacher", maritalStatus: "Married" },
+      personalHistory: { smoking: false, alcohol: false },
+      examination: { generalCondition: "Good", bp: "138/88", pulse: "82", weight: "66", height: "160", bmi: "25.8" },
+      summary: "31yo G3P2. High risk — Prev CS, PIH, HTN.", autoRisk: "high",
+    },
+    visits: [
+      { id: "pv2-1", date: "2025-11-01", type: "ANC 4th Visit (28 weeks)", ancContact: 4, ga: "25+2", bp: "142/90", weight: "70.0", fetalHR: "138", fundal: "26", findings: "BP elevated. Labetalol started.", plan: "Weekly BP monitoring.", bpFlag: "high", fhrFlag: null },
+      { id: "pv2-2", date: "2026-01-15", type: "ANC 7th Visit (36 weeks)", ancContact: 7, ga: "35+4", bp: "148/92", weight: "72.0", fetalHR: "144", fundal: "34", findings: "Persistent HTN. Planned LSCS.", plan: "Elective LSCS at 38 weeks.", bpFlag: "high", fhrFlag: null },
+    ],
+    labs: [
+      { id: "pl2-1", test: "Haemoglobin", date: "2025-07-20", value: "10.2", unit: "g/dL", status: "abnormal" },
+      { id: "pl2-2", test: "Blood Group & Rh", date: "2025-07-20", value: "B+", unit: "", status: "normal" },
+    ],
+  },
+  {
+    id: "PN-003", name: "Kamala Rana", age: 24, phone: "9823456789", address: "Attariya, Kailali",
+    bloodGroup: "O+", religion: "Hindu", ethnicity: "Janajati", education: "Secondary (9–10)", occupation: "Farmer",
+    weight: "56", height: "155", gravida: 1, para: 1,
+    lmp: "2025-06-05", edd: "2026-03-12", ga: "39+3",
+    deliveryDate: "2026-03-01", deliveryTime: "22:45", deliveryMode: "SVD (Spontaneous Vaginal Delivery)", durationOfLabor: "6 hours", maternalComplications: "None", episiotomy: "No",
+    babySex: "Male", birthWeight: "3.0", apgar1: "9", apgar5: "10", babyStatus: "Stable", feedingMethod: "Breastfeeding", bfedInitiated: "Yes",
+    dischargeDate: "2026-03-02", followUpDate: "2026-03-22", familyPlanningCounseling: "Pending", signsExplained: "Yes", immunization: { bcg: true, opv: true, hepB: true },
+    riskStatus: "low", riskLevel: "low", registeredOn: "2025-09-01", patientType: "postnatal",
+    tags: [], basicMedical: {},
+    partner: { name: "Bikram Rana", age: 26, occupation: "Farmer" }, allergies: "",
+    firstVisit: {
+      completed: true, completedOn: "2025-09-01",
+      menstrualHistory: { cycleNature: "Regular", lmp: "2025-06-05", regularCycles: true },
+      obstetricHistory: { detailedHistory: "G1P0 — Primigravida.", previousPregnancies: [] },
+      medicalHistory: { asthma: false, hypertension: false, diabetes: false },
+      examination: { generalCondition: "Good", bp: "110/70", pulse: "74", weight: "50", height: "155", bmi: "20.8" },
+      summary: "24yo primigravida. Low risk.", autoRisk: "low",
+    },
+    visits: [
+      { id: "pv3-1", date: "2026-01-10", type: "ANC 5th Visit (32 weeks)", ancContact: 5, ga: "31+0", bp: "112/72", weight: "54.0", fetalHR: "148", fundal: "31", findings: "Normal.", plan: "Continue supplements.", bpFlag: null, fhrFlag: null },
+    ],
+    labs: [
+      { id: "pl3-1", test: "Haemoglobin", date: "2025-09-01", value: "11.8", unit: "g/dL", status: "normal" },
+    ],
+  },
+  {
+    id: "PN-004", name: "Sunita Rai", age: 35, phone: "9834567890", address: "Dhangadhi 1, Kailali",
+    bloodGroup: "AB−", religion: "Hindu", ethnicity: "Janajati", education: "Graduate", occupation: "Nurse",
+    weight: "68", height: "162", gravida: 4, para: 3,
+    lmp: "2025-05-01", edd: "2026-02-05", ga: "44+2",
+    deliveryDate: "2026-02-10", deliveryTime: "11:20", deliveryMode: "Vacuum Delivery", durationOfLabor: "16 hours", maternalComplications: "Anemia", episiotomy: "Yes",
+    babySex: "Female", birthWeight: "2.7", apgar1: "6", apgar5: "8", babyStatus: "NICU admitted", feedingMethod: "Formula", bfedInitiated: "No",
+    dischargeDate: "2026-02-14", followUpDate: "2026-03-10", familyPlanningCounseling: "Done", signsExplained: "Yes", immunization: { bcg: false, opv: false, hepB: false },
+    riskStatus: "moderate", riskLevel: "moderate", registeredOn: "2025-07-10", patientType: "postnatal",
+    tags: ["Rh Negative", "Elderly Gravida"], basicMedical: {},
+    partner: { name: "Sunil Rai", age: 38, occupation: "Army" }, allergies: "Penicillin",
+    firstVisit: {
+      completed: true, completedOn: "2025-07-10",
+      menstrualHistory: { cycleNature: "Regular", lmp: "2025-05-01", regularCycles: true },
+      obstetricHistory: {
+        prevCS: false, prevPPH: false, detailedHistory: "G4P2L2A1.", previousPregnancies: [
+          { year: "2018", placeOfDelivery: "Hospital", modeOfDelivery: "SVD (Normal)", babyWeight: "3.1 kg", babySex: "Male" },
+          { year: "2021", placeOfDelivery: "Hospital", modeOfDelivery: "SVD (Normal)", babyWeight: "2.9 kg", babySex: "Female" },
+        ]
+      },
+      medicalHistory: { asthma: false, hypertension: false, diabetes: false, thyroid: false },
+      treatmentHistory: { drugAllergy: "Penicillin", rhImmunoglobulin: true },
+      examination: { generalCondition: "Good", bp: "120/76", pulse: "80", weight: "62", height: "162", bmi: "23.6" },
+      summary: "35yo G4P2A1. Moderate risk — Rh Negative, elderly gravida.", autoRisk: "moderate",
+    },
+    visits: [
+      { id: "pv4-1", date: "2025-12-20", type: "ANC 6th Visit (34 weeks)", ancContact: 6, ga: "33+4", bp: "118/76", weight: "66.0", fetalHR: "140", fundal: "33", findings: "Hb 9.2 — Anaemia.", plan: "IV Iron therapy.", bpFlag: null, fhrFlag: null },
+    ],
+    labs: [
+      { id: "pl4-1", test: "Haemoglobin", date: "2025-12-20", value: "9.2", unit: "g/dL", status: "abnormal" },
+      { id: "pl4-2", test: "Blood Group & Rh", date: "2025-07-10", value: "AB Rh−", unit: "", status: "normal" },
+    ],
+  },
+  {
+    id: "PN-005", name: "Parbati Shahi", age: 22, phone: "9845678901", address: "Dhangadhi 5, Kailali",
+    bloodGroup: "B+", religion: "Hindu", ethnicity: "Chhetri", education: "Lower Secondary (6–8)", occupation: "Homemaker",
+    weight: "54", height: "152", gravida: 1, para: 1,
+    lmp: "2025-05-28", edd: "2026-03-04", ga: "40+4",
+    deliveryDate: "2026-02-25", deliveryTime: "04:10", deliveryMode: "SVD (Spontaneous Vaginal Delivery)", durationOfLabor: "9 hours", maternalComplications: "Mild preeclampsia", episiotomy: "Yes",
+    babySex: "Male", birthWeight: "3.1", apgar1: "8", apgar5: "9", babyStatus: "Stable", feedingMethod: "Breastfeeding", bfedInitiated: "Yes",
+    dischargeDate: "2026-02-27", followUpDate: "2026-03-18", familyPlanningCounseling: "Done", signsExplained: "Yes", immunization: { bcg: true, opv: true, hepB: true },
+    riskStatus: "moderate", riskLevel: "moderate", registeredOn: "2025-08-20", patientType: "postnatal",
+    tags: [], basicMedical: {},
+    partner: { name: "Kumar Shahi", age: 24, occupation: "Labourer" }, allergies: "",
+    firstVisit: {
+      completed: true, completedOn: "2025-08-20",
+      obstetricHistory: { detailedHistory: "G1P0.", previousPregnancies: [] },
+      medicalHistory: { hypertension: false, diabetes: false },
+      examination: { bp: "110/70", weight: "48", height: "152", bmi: "20.8" },
+      summary: "22yo primigravida. Low risk at booking.", autoRisk: "low",
+    },
+    visits: [
+      { id: "pv5-1", date: "2026-02-01", type: "ANC 7th Visit (36 weeks)", ancContact: 7, ga: "35+4", bp: "144/92", weight: "53.0", fetalHR: "150", fundal: "34", findings: "BP elevated — preeclampsia.", plan: "Admit for monitoring.", bpFlag: "high", fhrFlag: null },
+    ],
+    labs: [
+      { id: "pl5-1", test: "Haemoglobin", date: "2025-08-20", value: "11.4", unit: "g/dL", status: "normal" },
+    ],
+  },
+  {
+    id: "PN-006", name: "Devi Basnet", age: 29, phone: "9856789012", address: "Dhangadhi 2, Kailali",
+    bloodGroup: "A−", religion: "Hindu", ethnicity: "Chhetri", education: "Graduate", occupation: "Business",
+    weight: "70", height: "163", gravida: 2, para: 2,
+    lmp: "2025-05-25", edd: "2026-03-01", ga: "41+0",
+    deliveryDate: "2026-03-03", deliveryTime: "08:45", deliveryMode: "LSCS (Cesarean Section)", durationOfLabor: "N/A", maternalComplications: "Wound infection", episiotomy: "No",
+    babySex: "Male", birthWeight: "3.5", apgar1: "8", apgar5: "9", babyStatus: "Stable", feedingMethod: "Mixed", bfedInitiated: "Yes",
+    dischargeDate: "2026-03-08", followUpDate: "2026-03-25", familyPlanningCounseling: "Done", signsExplained: "Yes", immunization: { bcg: true, opv: true, hepB: true },
+    riskStatus: "moderate", riskLevel: "moderate", registeredOn: "2025-08-15", patientType: "postnatal",
+    tags: ["Rh Negative"], basicMedical: { prevCS: true },
+    partner: { name: "Hari Basnet", age: 32, occupation: "Business" }, allergies: "",
+    firstVisit: {
+      completed: true, completedOn: "2025-08-15",
+      obstetricHistory: {
+        prevCS: true, detailedHistory: "G2P1L1. 1st LSCS 2023.", previousPregnancies: [
+          { year: "2023", placeOfDelivery: "Hospital", modeOfDelivery: "LSCS", indication: "Breech", babyWeight: "3.2 kg", babySex: "Male" },
+        ]
+      },
+      medicalHistory: { hypertension: false, diabetes: false },
+      examination: { bp: "116/74", weight: "64", height: "163", bmi: "24.1" },
+      summary: "29yo G2P1. Moderate risk — Prev CS, Rh neg.", autoRisk: "moderate",
+    },
+    visits: [
+      { id: "pv6-1", date: "2026-01-28", type: "ANC 7th Visit (36 weeks)", ancContact: 7, ga: "35+0", bp: "118/76", weight: "68.0", fetalHR: "146", fundal: "35", findings: "Prev scar. Planned repeat CS.", plan: "Elective LSCS at 38 weeks.", bpFlag: null, fhrFlag: null },
+    ],
+    labs: [
+      { id: "pl6-1", test: "Blood Group & Rh", date: "2025-08-15", value: "A Rh−", unit: "", status: "normal" },
+      { id: "pl6-2", test: "Indirect Coombs Test", date: "2025-12-01", value: "Negative", unit: "", status: "normal" },
+    ],
+  },
+  {
+    id: "PN-007", name: "Radha Chaudhary", age: 26, phone: "9867890123", address: "Tikapur, Kailali",
+    bloodGroup: "O+", religion: "Hindu", ethnicity: "Madhesi", education: "Primary (1–5)", occupation: "Farmer",
+    weight: "52", height: "150", gravida: 2, para: 1,
+    lmp: "2025-06-01", edd: "2026-03-08", ga: "40+0",
+    deliveryDate: "2026-02-28", deliveryTime: "18:20", deliveryMode: "SVD (Spontaneous Vaginal Delivery)", durationOfLabor: "14 hours", maternalComplications: "None", episiotomy: "Yes",
+    babySex: "Female", birthWeight: "2.4", apgar1: "2", apgar5: "4", babyStatus: "Referred", feedingMethod: "—", bfedInitiated: "No",
+    dischargeDate: "2026-03-01", followUpDate: "2026-03-14", familyPlanningCounseling: "Done", signsExplained: "Yes", immunization: { bcg: false, opv: false, hepB: false },
+    riskStatus: "high", riskLevel: "high", registeredOn: "2025-08-01", patientType: "postnatal",
+    tags: [], basicMedical: {},
+    partner: { name: "Mohan Chaudhary", age: 28, occupation: "Farmer" }, allergies: "",
+    firstVisit: {
+      completed: true, completedOn: "2025-08-01",
+      obstetricHistory: {
+        prevStillbirth: false, detailedHistory: "G2P0A1.", previousPregnancies: [],
+        abortions: [{ type: "Spontaneous Abortion", year: "2024", ga: "12 weeks", management: "Expectant" }]
+      },
+      medicalHistory: { hypertension: false, diabetes: false },
+      examination: { bp: "108/68", weight: "46", height: "150", bmi: "20.4" },
+      summary: "26yo G2. Previous spontaneous abortion.", autoRisk: "low",
+    },
+    visits: [
+      { id: "pv7-1", date: "2026-02-15", type: "ANC 7th Visit (36 weeks)", ancContact: 7, ga: "36+5", bp: "110/70", weight: "51.0", fetalHR: "100", fundal: "34", findings: "Reduced fetal movement. FHR low.", plan: "Emergency admission.", bpFlag: null, fhrFlag: "bradycardia" },
+    ],
+    labs: [
+      { id: "pl7-1", test: "Haemoglobin", date: "2025-08-01", value: "10.8", unit: "g/dL", status: "abnormal" },
+    ],
+  },
+  {
+    id: "PN-008", name: "Manju Oli", age: 33, phone: "9878901234", address: "Dhangadhi 4, Kailali",
+    bloodGroup: "B−", religion: "Hindu", ethnicity: "Chhetri", education: "Graduate", occupation: "Healthcare Worker",
+    weight: "74", height: "165", gravida: 3, para: 2,
+    lmp: "2025-04-20", edd: "2026-01-25", ga: "46+0",
+    deliveryDate: "2026-01-30", deliveryTime: "23:55", deliveryMode: "Forceps Delivery", durationOfLabor: "20 hours", maternalComplications: "PPH, Transfusion needed", episiotomy: "Yes",
+    babySex: "Male", birthWeight: "2.5", apgar1: "5", apgar5: "7", babyStatus: "NICU admitted", feedingMethod: "Formula", bfedInitiated: "No",
+    dischargeDate: "2026-02-05", followUpDate: "2026-03-12", familyPlanningCounseling: "Pending", signsExplained: "Yes", immunization: { bcg: false, opv: false, hepB: false },
+    riskStatus: "high", riskLevel: "high", registeredOn: "2025-06-15", patientType: "postnatal",
+    tags: ["Rh Negative"], basicMedical: { highBP: true },
+    partner: { name: "Prakash Oli", age: 36, occupation: "Engineer" }, allergies: "NSAIDs",
+    firstVisit: {
+      completed: true, completedOn: "2025-06-15",
+      obstetricHistory: {
+        prevPPH: true, prevCS: false, detailedHistory: "G3P1L1A1. PPH in 1st delivery.", previousPregnancies: [
+          { year: "2020", placeOfDelivery: "Hospital", modeOfDelivery: "SVD (Normal)", complications: "PPH", babyWeight: "2.8 kg", babySex: "Female" },
+        ]
+      },
+      medicalHistory: { hypertension: true, diabetes: false, thyroid: false },
+      treatmentHistory: { drugAllergy: "NSAIDs", bloodTransfusion: true },
+      examination: { bp: "136/86", weight: "68", height: "165", bmi: "25.0" },
+      summary: "33yo G3P1A1. High risk — Prev PPH, HTN, Rh neg.", autoRisk: "high",
+    },
+    visits: [
+      { id: "pv8-1", date: "2025-12-01", type: "ANC 6th Visit (34 weeks)", ancContact: 6, ga: "32+2", bp: "140/90", weight: "72.0", fetalHR: "136", fundal: "31", findings: "BP elevated. Growth scan normal.", plan: "Labetalol. Weekly monitoring.", bpFlag: "high", fhrFlag: null },
+    ],
+    labs: [
+      { id: "pl8-1", test: "Haemoglobin", date: "2025-06-15", value: "9.8", unit: "g/dL", status: "abnormal" },
+      { id: "pl8-2", test: "Blood Group & Rh", date: "2025-06-15", value: "B Rh−", unit: "", status: "normal" },
+    ],
+  },
+  {
+    id: "PN-009", name: "Anita Tamang", age: 28, phone: "9889012345", address: "Dhangadhi 7, Kailali",
+    bloodGroup: "AB+", religion: "Buddhist", ethnicity: "Janajati", education: "Higher Secondary (11–12)", occupation: "Business",
+    weight: "60", height: "157", gravida: 1, para: 1,
+    lmp: "2025-06-10", edd: "2026-03-17", ga: "38+5",
+    deliveryDate: "2026-03-05", deliveryTime: "06:10", deliveryMode: "SVD (Spontaneous Vaginal Delivery)", durationOfLabor: "5 hours", maternalComplications: "None", episiotomy: "No",
+    babySex: "Female", birthWeight: "3.3", apgar1: "9", apgar5: "10", babyStatus: "Stable", feedingMethod: "Breastfeeding", bfedInitiated: "Yes",
+    dischargeDate: "2026-03-07", followUpDate: "2026-03-26", familyPlanningCounseling: "Done", signsExplained: "Yes", immunization: { bcg: true, opv: true, hepB: true },
+    riskStatus: "low", riskLevel: "low", registeredOn: "2025-09-10", patientType: "postnatal",
+    tags: [], basicMedical: {},
+    partner: { name: "Dorje Tamang", age: 30, occupation: "Business" }, allergies: "",
+    firstVisit: {
+      completed: true, completedOn: "2025-09-10",
+      obstetricHistory: { detailedHistory: "G1P0 — Primigravida.", previousPregnancies: [] },
+      medicalHistory: { asthma: false, hypertension: false, diabetes: false },
+      examination: { bp: "114/72", weight: "54", height: "157", bmi: "21.9" },
+      summary: "28yo primigravida. Low risk.", autoRisk: "low",
+    },
+    visits: [
+      { id: "pv9-1", date: "2026-02-10", type: "ANC 7th Visit (36 weeks)", ancContact: 7, ga: "35+0", bp: "116/74", weight: "58.0", fetalHR: "146", fundal: "35", findings: "Normal progress.", plan: "Await labour.", bpFlag: null, fhrFlag: null },
+    ],
+    labs: [
+      { id: "pl9-1", test: "Haemoglobin", date: "2025-09-10", value: "12.0", unit: "g/dL", status: "normal" },
+    ],
+  },
+  {
+    id: "PN-010", name: "Sushila Malla", age: 30, phone: "9890123456", address: "Lamki, Kailali",
+    bloodGroup: "A+", religion: "Hindu", ethnicity: "Chhetri", education: "Secondary (9–10)", occupation: "Farmer",
+    weight: "62", height: "156", gravida: 2, para: 2,
+    lmp: "2025-05-12", edd: "2026-02-16", ga: "42+5",
+    deliveryDate: "2026-02-18", deliveryTime: "13:30", deliveryMode: "SVD (Spontaneous Vaginal Delivery)", durationOfLabor: "7 hours", maternalComplications: "UTI", episiotomy: "Yes",
+    babySex: "Male", birthWeight: "3.0", apgar1: "8", apgar5: "9", babyStatus: "Stable", feedingMethod: "Breastfeeding", bfedInitiated: "Yes",
+    dischargeDate: "2026-02-20", followUpDate: "2026-03-18", familyPlanningCounseling: "Done", signsExplained: "Yes", immunization: { bcg: true, opv: true, hepB: true },
+    riskStatus: "low", riskLevel: "low", registeredOn: "2025-08-05", patientType: "postnatal",
+    tags: [], basicMedical: {},
+    partner: { name: "Krishna Malla", age: 33, occupation: "Farmer" }, allergies: "",
+    firstVisit: {
+      completed: true, completedOn: "2025-08-05",
+      obstetricHistory: {
+        detailedHistory: "G2P1L1. 1st SVD 2023.", previousPregnancies: [
+          { year: "2023", placeOfDelivery: "Health Centre", modeOfDelivery: "SVD (Normal)", babyWeight: "2.9 kg", babySex: "Male" },
+        ]
+      },
+      medicalHistory: { hypertension: false, diabetes: false },
+      examination: { bp: "112/70", weight: "56", height: "156", bmi: "23.0" },
+      summary: "30yo G2P1. Low risk.", autoRisk: "low",
+    },
+    visits: [
+      { id: "pv10-1", date: "2026-01-15", type: "ANC 6th Visit (34 weeks)", ancContact: 6, ga: "35+4", bp: "114/72", weight: "60.0", fetalHR: "144", fundal: "35", findings: "UTI symptoms. Urine culture sent.", plan: "Amoxicillin 5 days.", bpFlag: null, fhrFlag: null },
+    ],
+    labs: [
+      { id: "pl10-1", test: "Haemoglobin", date: "2025-08-05", value: "11.6", unit: "g/dL", status: "normal" },
+    ],
+  },
+];
+
 function reducer(state, action) {
   switch (action.type) {
     case "ADD_PATIENT": {
       const newP = { ...action.payload };
       newP.riskLevel = computeOverallRisk(newP);
       return { ...state, patients: [newP, ...state.patients] };
+    }
+    case "RECORD_DELIVERY": {
+      const patient = state.patients.find(p => p.id === action.patientId);
+      if (!patient) return state;
+
+      let newPara = parseInt(patient.para) || 0;
+
+      if (patient.lmp && action.payload.deliveryDate) {
+        const gaStr = calcGA(patient.lmp, action.payload.deliveryDate);
+        if (gaStr) {
+          const gaWeeks = parseInt(gaStr.split('+')[0], 10);
+          if (gaWeeks >= 28) {
+            newPara += 1;
+          }
+        }
+      } else {
+        // Fallback if no dates exist but delivery is recorded
+        newPara += 1;
+      }
+
+      const postP = {
+        ...patient,
+        ...action.payload,
+        para: newPara,
+        patientType: "postnatal"
+      };
+
+      return {
+        ...state,
+        patients: state.patients.filter(p => p.id !== action.patientId),
+        postnatalPatients: [postP, ...(state.postnatalPatients || [])]
+      };
     }
     case "ADD_VISIT":
       return {
@@ -325,6 +666,6 @@ function reducer(state, action) {
 export const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, { patients: SEED });
+  const [state, dispatch] = useReducer(reducer, { patients: SEED, postnatalPatients: POSTNATAL_SEED });
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }

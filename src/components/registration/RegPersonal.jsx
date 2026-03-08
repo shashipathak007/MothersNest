@@ -3,13 +3,15 @@ import FormSelect from "../ui/FormSelect.jsx";
 import SectionLabel from "../ui/SectionLabel.jsx";
 import Card from "../ui/Card.jsx";
 import {
-  BLOOD_GROUPS,
   EDUCATION_LEVELS,
   OCCUPATIONS,
   RELIGIONS,
   ETHNICITIES,
   BASIC_MEDICAL_FLAGS,
 } from "../../utils/helpers.js";
+
+const BLOOD_TYPES = ["A", "B", "AB", "O"];
+const RH_OPTIONS = ["Positive", "Negative"];
 
 export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
   const p = form.partner;
@@ -86,13 +88,26 @@ export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
 
           <FormSelect
             label="Blood Group"
-            value={form.bloodGroup}
-            onChange={(e) => set("bloodGroup", e.target.value)}
+            value={form.bloodType || ""}
+            onChange={(e) => set("bloodType", e.target.value)}
           >
             <option value="">Select</option>
-            {BLOOD_GROUPS.map((g) => (
+            {BLOOD_TYPES.map((g) => (
               <option key={g} value={g}>
                 {g}
+              </option>
+            ))}
+          </FormSelect>
+
+          <FormSelect
+            label="Rh"
+            value={form.rh || ""}
+            onChange={(e) => set("rh", e.target.value)}
+          >
+            <option value="">Select</option>
+            {RH_OPTIONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
               </option>
             ))}
           </FormSelect>
@@ -221,11 +236,10 @@ export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
             return (
               <label
                 key={flag.key}
-                className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${
-                  checked
-                    ? "bg-rose-50 border-rose-400"
-                    : "bg-stone-50 border-stone-200 hover:border-stone-300"
-                }`}
+                className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${checked
+                  ? "bg-rose-50 border-rose-400"
+                  : "bg-stone-50 border-stone-200 hover:border-stone-300"
+                  }`}
               >
                 <input
                   type="checkbox"
@@ -236,11 +250,10 @@ export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
                   className="w-4 h-4 accent-rose-600 shrink-0"
                 />
                 <span
-                  className={`text-xs font-semibold ${
-                    checked
-                      ? "text-rose-800"
-                      : "text-stone-700"
-                  }`}
+                  className={`text-xs font-semibold ${checked
+                    ? "text-rose-800"
+                    : "text-stone-700"
+                    }`}
                 >
                   {flag.label}
                 </span>
@@ -248,7 +261,7 @@ export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
             );
           })}
         </div>
-        
+
 
         <FormInput
           label="Known Allergies"
@@ -256,9 +269,9 @@ export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
           onChange={(e) => set("allergies", e.target.value)}
           placeholder="Penicillin, NSAIDs"
         />
-        
+
       </Card>
-            {/* ───────────────────────────── */}
+      {/* ───────────────────────────── */}
       {/* Partner Details */}
       {/* ───────────────────────────── */}
       <Card className="p-5">
@@ -295,7 +308,7 @@ export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
             }
           >
             <option value="">Select</option>
-            {BLOOD_GROUPS.map((g) => (
+            {["A+", "A−", "B+", "B−", "AB+", "AB−", "O+", "O−"].map((g) => (
               <option key={g} value={g}>
                 {g}
               </option>

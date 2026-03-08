@@ -91,6 +91,80 @@ function getRiskFactors(patient) {
   return factors;
 }
 
+/* ─── Postnatal Summary Card ───────────────────────────────────────── */
+function PostnatalSummaryCard({ p }) {
+  if (p.patientType !== "postnatal") return null;
+
+  return (
+    <Card className="p-5 border-2 border-brand-200 bg-brand-50/30">
+      <SectionLabel>Postnatal & Delivery Summary</SectionLabel>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+        <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Delivery Date</p>
+          <p className="font-semibold text-stone-800 text-sm">{p.deliveryDate || "—"} {p.deliveryTime && <span className="text-stone-500 font-normal">at {p.deliveryTime}</span>}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Mode of Delivery</p>
+          <p className="font-semibold text-brand-700 text-sm">{p.deliveryMode || "—"}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Labor Duration</p>
+          <p className="font-semibold text-stone-800 text-sm">{p.durationOfLabor || "—"}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Complications</p>
+          <p className="font-semibold text-stone-800 text-sm">{p.maternalComplications || "None"}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4 pt-4 border-t border-brand-100/50">
+        <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Baby Status</p>
+          <p className={`font-semibold text-sm ${p.babyStatus?.includes("Stillbirth") ? "text-rose-600" : p.babyStatus?.includes("NICU") || p.babyStatus?.includes("Referred") ? "text-amber-600" : "text-emerald-700"}`}>
+            {p.babyStatus || "—"}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Baby Sex / Weight</p>
+          <p className="font-semibold text-stone-800 text-sm">{p.babySex || "—"} / {p.birthWeight ? `${p.birthWeight} kg` : "—"}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">APGAR Score</p>
+          <p className="font-semibold text-stone-800 text-sm">{p.apgar1 ? `${p.apgar1} (1m)` : "—"} {p.apgar5 ? <span className="text-stone-500 font-normal">/ {p.apgar5} (5m)</span> : ""}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Breastfeeding</p>
+          <p className="font-semibold text-stone-800 text-sm">{p.bfedInitiated === "Yes" ? "Initiated ✓" : "Not initiated"}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-brand-100/50">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] text-stone-500 uppercase tracking-wider">Discharge Date</p>
+            <p className="font-semibold text-stone-800 text-sm">{p.dischargeDate || "—"}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-stone-500 uppercase tracking-wider">Next Follow-up</p>
+            <p className="font-semibold text-brand-700 text-sm">{p.followUpDate || "—"}</p>
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Counseling & Immunization</p>
+          <div className="text-xs text-stone-600 mt-1 space-y-1">
+            <p><strong className="text-stone-800">Family Planning:</strong> {p.familyPlanningCounseling || "—"}</p>
+            <p><strong className="text-stone-800">Danger Signs:</strong> {p.signsExplained === "Yes" ? "Explained ✓" : "Not explained"}</p>
+            <p><strong className="text-stone-800">Baby Immunization:</strong> {p.immunization ?
+              [p.immunization.bcg && "BCG", p.immunization.opv && "OPV", p.immunization.hepB && "HepB"].filter(Boolean).join(", ") || "None given"
+              : "—"}</p>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 /* ─── Main InfoTab ─────────────────────────────────────────────────── */
 export default function InfoTab({ patient, onViewVisits }) {
   const abnormalLabs = (patient.labs || []).filter(l => l.status === "abnormal");
@@ -202,6 +276,11 @@ export default function InfoTab({ patient, onViewVisits }) {
 
       {/* Right column */}
       <div className="space-y-4 lg:col-span-2">
+
+        {/* ──── POSTNATAL SUMMARY CARD ──── */}
+        {patient.patientType === "postnatal" && (
+          <PostnatalSummaryCard p={patient} />
+        )}
 
         {/* ──── MATERNAL HEALTH RISK ASSESSMENT CARD ──── */}
         {hasRiskFactors && (
