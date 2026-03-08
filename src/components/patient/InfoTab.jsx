@@ -97,8 +97,8 @@ export default function InfoTab({ patient, onViewVisits }) {
   const pendingLabs = (patient.labs || []).filter(l => l.status === "pending");
 
   const lastVisit = patient.visits?.[0];
-  const bpAlert = lastVisit?.bpFlag;
-  const fhrAlert = lastVisit?.fhrFlag;
+  const bpAlert = lastVisit?.bpFlag === "normal" ? null : lastVisit?.bpFlag;
+  const fhrAlert = lastVisit?.fhrFlag === "normal" ? null : lastVisit?.fhrFlag;
 
   const activeBasicMed = BASIC_MEDICAL_FLAGS.filter(f => patient.basicMedical?.[f.key]);
 
