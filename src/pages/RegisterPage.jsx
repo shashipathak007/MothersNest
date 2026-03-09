@@ -112,6 +112,42 @@ export default function RegisterPage() {
       ? Math.round((heightCm % 30.48) / 2.54).toString()
       : "";
 
+    // Build previous pregnancy entry from the delivery that just happened
+    const prevDeliveryEntry = p.deliveryDate ? {
+      year: p.deliveryDate.slice(0, 4),
+      outcome: p.babyStatus === "Stillbirth" ? "Stillbirth" :
+        p.babyStatus === "Neonatal Death" ? "Neonatal Death" : "Live Birth",
+      ancAttended: true,
+      placeOfDelivery: "Hospital",
+      ga: p.gaAtDelivery || "",
+      typeOfLabour: p.durationOfLabor ? "Spontaneous" : "",
+      modeOfDelivery: p.deliveryMode || "",
+      complications: p.maternalComplications && p.maternalComplications !== "None" ? p.maternalComplications : "",
+      babySex: p.babySex || "",
+      babyWeight: p.birthWeight ? `${p.birthWeight} kg` : "",
+      apgar: p.apgar5 ? `5min: ${p.apgar5}` : "",
+      timeOfBirth: p.deliveryTime || "",
+      immunisations: p.immunization ? Object.entries(p.immunization).filter(([_, v]) => v).map(([k]) => k.toUpperCase()).join(", ") : "",
+      breastfeeding: p.bfedInitiated === "Yes" ? "Exclusive (6 months)" : "",
+    } : null;
+
+    // Combine with existing previous pregnancies from old firstVisit
+    const existingPrevPregs = p.firstVisit?.obstetricHistory?.previousPregnancies || [];
+    const allPrevPregs = prevDeliveryEntry
+      ? [prevDeliveryEntry, ...existingPrevPregs]
+      : existingPrevPregs;
+
+    // Build prevFirstVisit with updated OB history
+    const prevFirstVisit = p.firstVisit ? {
+      ...p.firstVisit,
+      obstetricHistory: {
+        ...(p.firstVisit.obstetricHistory || {}),
+        previousPregnancies: allPrevPregs,
+      },
+    } : allPrevPregs.length > 0 ? {
+      obstetricHistory: { previousPregnancies: allPrevPregs },
+    } : null;
+
     setFormState((prev) => ({
       ...prev,
       name: p.name,
@@ -140,7 +176,7 @@ export default function RegisterPage() {
       gravida: String((parseInt(p.gravida) || 0) + 1),
       // User requested: only make gravida plus 1 but no para
       para: String(parseInt(p.para) || 0),
-      prevFirstVisit: p.firstVisit || null,
+      prevFirstVisit: prevFirstVisit,
     }));
     setStep(1);
   }

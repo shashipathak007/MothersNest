@@ -11,7 +11,7 @@ export default function SearchBar({ value, onChange, className = "" }) {
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Search by name, ID or phone…"
+        placeholder="Search by Name or ID"
         className="w-full pl-10 pr-4 py-2 text-sm bg-stone-100 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-brand-600 placeholder:text-stone-400"
       />
     </div>

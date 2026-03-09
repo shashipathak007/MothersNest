@@ -684,6 +684,46 @@ function reducer(state, action) {
       const p = state.postnatalPatients.find(x => x.id === action.patientId);
       if (!p) return state;
 
+      // Build the previous pregnancy entry from the delivery that just happened
+      const prevDeliveryEntry = p.deliveryDate ? {
+        year: p.deliveryDate.slice(0, 4),
+        outcome: p.babyStatus === "Stillbirth" ? "Stillbirth" :
+          p.babyStatus === "Neonatal Death" ? "Neonatal Death" : "Live Birth",
+        ancAttended: true,
+        placeOfDelivery: "Hospital",
+        ga: p.gaAtDelivery || "",
+        typeOfLabour: p.durationOfLabor ? "Spontaneous" : "",
+        modeOfDelivery: p.deliveryMode || "",
+        indication: "",
+        anaesthesia: "",
+        interventions: p.episiotomy === "Yes" ? "Episiotomy" : "",
+        complications: p.maternalComplications && p.maternalComplications !== "None" ? p.maternalComplications : "",
+        babySex: p.babySex || "",
+        babyWeight: p.birthWeight ? `${p.birthWeight} kg` : "",
+        apgar: p.apgar5 ? `5min: ${p.apgar5}` : "",
+        timeOfBirth: p.deliveryTime || "",
+        babyComplications: "",
+        immunisations: p.immunization ? Object.entries(p.immunization).filter(([_, v]) => v).map(([k]) => k.toUpperCase()).join(", ") : "",
+        breastfeeding: p.bfedInitiated === "Yes" ? "Exclusive (6 months)" : "",
+      } : null;
+
+      // Combine: new delivery entry + any existing previousPregnancies from prior firstVisit
+      const existingPrevPregs = p.firstVisit?.obstetricHistory?.previousPregnancies || [];
+      const allPrevPregs = prevDeliveryEntry
+        ? [prevDeliveryEntry, ...existingPrevPregs]
+        : existingPrevPregs;
+
+      // Save the previous firstVisit data (with updated OB history) so the new MHE form can inherit it
+      const prevFirstVisit = p.firstVisit ? {
+        ...p.firstVisit,
+        obstetricHistory: {
+          ...(p.firstVisit.obstetricHistory || {}),
+          previousPregnancies: allPrevPregs,
+        },
+      } : allPrevPregs.length > 0 ? {
+        obstetricHistory: { previousPregnancies: allPrevPregs },
+      } : null;
+
       const newP = {
         ...p,
         ...action.payload,
@@ -693,9 +733,15 @@ function reducer(state, action) {
         labs: [],
         tags: [],
         riskLevel: "low",
-        // We might want to keep some aspects of the previous firstVisit or clear it
-        // Usually, a new pregnancy requires a new clinical evaluation
         firstVisit: null,
+        prevFirstVisit: prevFirstVisit,
+        // Clear delivery fields so they don't confuse the antenatal view
+        deliveryDate: undefined,
+        deliveryTime: undefined,
+        deliveryMode: undefined,
+        babySex: undefined,
+        birthWeight: undefined,
+        babyStatus: undefined,
       };
 
       return {

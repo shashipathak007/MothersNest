@@ -25,6 +25,7 @@ export default function AddLabModal({ patient, onClose }) {
     }
   }, [form.test]);
 
+  
   // Auto-determine status when value changes
   useEffect(() => {
     if (form.test && form.value) {

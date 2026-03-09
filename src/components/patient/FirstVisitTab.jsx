@@ -398,13 +398,8 @@ function transformToHistory(p) {
 const EMPTY_FORM = (patient) => {
     const prev = patient.prevFirstVisit || {};
 
-    // If returning mother, the pregnancy she just "finished" in our system
-    // should be added to the previous pregnancies history.
-    const autoHistoryEntry = transformToHistory(patient);
-    const existingHistory = prev.obstetricHistory?.previousPregnancies || [];
-    const combinedHistory = autoHistoryEntry
-        ? [autoHistoryEntry, ...existingHistory]
-        : existingHistory;
+    // Previous pregnancies are already built upstream (RegisterPage or RECORD_NEW_PREGNANCY)
+    const previousPregnancies = prev.obstetricHistory?.previousPregnancies || [];
 
     return {
         presentingComplaints: "",
@@ -418,10 +413,10 @@ const EMPTY_FORM = (patient) => {
         menstrualHistory: { cycleNature: prev.menstrualHistory?.cycleNature || "", lmp: patient.lmp || "", regularCycles: prev.menstrualHistory?.regularCycles ?? true },
         obstetricHistory: prev.obstetricHistory ? {
             ...prev.obstetricHistory,
-            previousPregnancies: combinedHistory
+            previousPregnancies: previousPregnancies
         } : {
             detailedHistory: "",
-            previousPregnancies: combinedHistory,
+            previousPregnancies: previousPregnancies,
             abortions: [],
         },
         medicalHistory: prev.medicalHistory ? { ...prev.medicalHistory } : {
@@ -856,7 +851,7 @@ function FirstVisitForm({ patient, onSaved }) {
                     >
                         <option value="">Select Method</option>
                         {CONTRACEPTIVE_METHODS.map(m => (
-                            <option key={m.label} value={m.label}>{m.label} ({m.risk})</option>
+                            <option key={m.label} value={m.label}>{m.label}</option>
                         ))}
                     </FormSelect>
                     {form.contraceptiveHistory && (

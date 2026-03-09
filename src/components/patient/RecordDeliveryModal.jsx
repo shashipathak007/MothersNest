@@ -64,10 +64,23 @@ export default function RecordDeliveryModal({ open, onClose, onSave, patient }) 
                             <option value="">Select Mode</option>
                             {DELIVERY_TYPES.map(t => (
                                 <option key={t.label} value={t.label}>
-                                    {t.label} ({t.risk} risk)
+                                    {t.label}
                                 </option>
                             ))}
                         </FormSelect>
+                        {form.deliveryMode && (() => {
+                            const dt = DELIVERY_TYPES.find(t => t.label === form.deliveryMode);
+                            if (!dt) return null;
+                            const cls = dt.risk === 'high' ? 'bg-rose-100 text-rose-700 ring-rose-200' :
+                                dt.risk === 'moderate' ? 'bg-amber-100 text-amber-700 ring-amber-200' :
+                                    'bg-emerald-100 text-emerald-700 ring-emerald-200';
+                            const icon = dt.risk === 'high' ? '⚠' : dt.risk === 'moderate' ? '⚡' : '✓';
+                            return (
+                                <div className={`px-3.5 py-2 text-xs rounded-xl font-bold uppercase tracking-wider ring-1 ${cls}`}>
+                                    {icon} {dt.risk} Risk
+                                </div>
+                            );
+                        })()}
                         <FormInput label="Duration of Labor (hours)" type="text" placeholder="e.g. 8" value={form.durationOfLabor} onChange={(e) => set("durationOfLabor", e.target.value)} />
                         <FormSelect
                             label="Maternal Complications"
