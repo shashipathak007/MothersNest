@@ -19,10 +19,12 @@ function getTestsForContact(contact) {
   return ANC_VISIT_TESTS[contact] || [];
 }
 
-export default function AddVisitModal({ patient, onClose }) {
+export default function AddVisitModal({ patient, initialVisit, onClose }) {
   const { dispatch } = useApp();
+  const isEdit = !!initialVisit;
   const lastV = patient.visits?.[0];
-  const [form, setForm] = useState({
+
+  const [form, setForm] = useState(initialVisit || {
     date: today(), type: "Unscheduled ANC Visit",
     ga: calcGA(patient.lmp) || "",
     bp: "", pulse: lastV?.pulse || "",
@@ -134,11 +136,21 @@ export default function AddVisitModal({ patient, onClose }) {
 
   function handleSubmit() {
     if (!form.findings.trim()) return;
-    dispatch({
-      type: "ADD_VISIT",
-      patientId: patient.id,
-      payload: { ...form, bmi, height: heightCm, id: uid(), ancContact: contact, bpFlag: bpF, fhrFlag: fhrF, pulseFlag: pulseF },
-    });
+
+    if (isEdit) {
+      dispatch({
+        type: "UPDATE_VISIT",
+        patientId: patient.id,
+        visitId: initialVisit.id,
+        payload: { ...form, bmi, height: heightCm, bpFlag: bpF, fhrFlag: fhrF, pulseFlag: pulseF },
+      });
+    } else {
+      dispatch({
+        type: "ADD_VISIT",
+        patientId: patient.id,
+        payload: { ...form, bmi, height: heightCm, id: uid(), ancContact: contact, bpFlag: bpF, fhrFlag: fhrF, pulseFlag: pulseF },
+      });
+    }
     // Add completed tests to patient's lab history automatically
     form.tests.forEach(testObj => {
       if (testObj.value.trim() !== "") {
@@ -154,7 +166,7 @@ export default function AddVisitModal({ patient, onClose }) {
   }
 
   return (
-    <Modal title="Record ANC Visit" subtitle={`${patient.name} · ${patient.id}`} onClose={onClose} size="xl">
+    <Modal title={isEdit ? "Edit ANC Visit" : "Record ANC Visit"} subtitle={`${patient.name} · ${patient.id}`} onClose={onClose} size="xl">
       <div className="space-y-6">
 
         {/* Date + Visit type */}

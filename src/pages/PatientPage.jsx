@@ -135,7 +135,7 @@ export default function PatientPage() {
 
         {tab === "info" && <InfoTab patient={patient} onViewVisits={() => setTab("visits")} />}
         {tab === "firstVisit" && <FirstVisitTab patient={patient} />}
-        {tab === "visits" && <VisitsTab visits={patient.visits} onAdd={() => setShowVisit(true)} missedContacts={missedContacts} />}
+        {tab === "visits" && <VisitsTab patient={patient} visits={patient.visits} onAdd={() => setShowVisit(true)} missedContacts={missedContacts} />}
       </div>
 
       {showVisit && <AddVisitModal patient={patient} onClose={() => setShowVisit(false)} />}

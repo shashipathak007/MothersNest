@@ -631,6 +631,27 @@ function reducer(state, action) {
           return p;
         })
       };
+    case "UPDATE_VISIT":
+      return {
+        ...state, patients: state.patients.map(p => {
+          if (p.id === action.patientId) {
+            const updatedP = {
+              ...p,
+              visits: p.visits.map(v => v.id === action.visitId ? { ...v, ...action.payload } : v)
+            };
+            // Sync vitals if it's the latest visit
+            const latest = updatedP.visits[0];
+            if (latest && latest.id === action.visitId) {
+              updatedP.weight = action.payload.weight || p.weight;
+              updatedP.height = action.payload.height || p.height;
+              updatedP.bmi = action.payload.bmi || p.bmi;
+            }
+            updatedP.riskLevel = computeOverallRisk(updatedP);
+            return updatedP;
+          }
+          return p;
+        })
+      };
     case "ADD_LAB":
       return {
         ...state, patients: state.patients.map(p => {

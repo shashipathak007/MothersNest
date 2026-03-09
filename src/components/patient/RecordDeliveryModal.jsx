@@ -2,13 +2,13 @@ import { useState } from "react";
 import Button from "../ui/Button.jsx";
 import FormInput from "../ui/FormInput.jsx";
 import FormSelect from "../ui/FormSelect.jsx";
-import { today } from "../../utils/helpers.js";
+import { today, DELIVERY_TYPES } from "../../utils/helpers.js";
 import Modal from "../ui/Modal.jsx";
 
 const EMPTY_FORM = {
     deliveryDate: today(),
     deliveryTime: "",
-    deliveryMode: "SVD (Spontaneous Vaginal Delivery)",
+    deliveryMode: "",
     durationOfLabor: "",
     maternalComplications: "None",
     episiotomy: "No",
@@ -60,15 +60,14 @@ export default function RecordDeliveryModal({ open, onClose, onSave, patient }) 
                             label="Mode of Delivery*"
                             value={form.deliveryMode}
                             onChange={(e) => set("deliveryMode", e.target.value)}
-                            options={[
-                                "SVD (Spontaneous Vaginal Delivery)",
-                                "LSCS (Cesarean Section) - Emergency",
-                                "LSCS (Cesarean Section) - Elective",
-                                "Vacuum Delivery",
-                                "Forceps Delivery",
-                                "Breech Delivery"
-                            ]}
-                        />
+                        >
+                            <option value="">Select Mode</option>
+                            {DELIVERY_TYPES.map(t => (
+                                <option key={t.label} value={t.label}>
+                                    {t.label} ({t.risk} risk)
+                                </option>
+                            ))}
+                        </FormSelect>
                         <FormInput label="Duration of Labor (hours)" type="text" placeholder="e.g. 8" value={form.durationOfLabor} onChange={(e) => set("durationOfLabor", e.target.value)} />
                         <FormSelect
                             label="Maternal Complications"

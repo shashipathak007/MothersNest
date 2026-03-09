@@ -7,7 +7,7 @@ import FormTextarea from "../ui/FormTextarea.jsx";
 import FormSelect from "../ui/FormSelect.jsx";
 import Button from "../ui/Button.jsx";
 import KVRow from "../ui/KVRow.jsx";
-import { today, calcBMI, autoRiskFromFirstVisit, RISK_CONFIG } from "../../utils/helpers.js";
+import { today, calcBMI, autoRiskFromFirstVisit, RISK_CONFIG, CONTRACEPTIVE_METHODS } from "../../utils/helpers.js";
 
 /* ─── Collapsible section wrapper ─────────────────────────────────── */
 function Section({ title, icon, children, defaultOpen = false }) {
@@ -276,7 +276,17 @@ function FirstVisitReadView({ fv }) {
             {fv.contraceptiveHistory && (
                 <Card className="p-4">
                     <SectionLabel>FP / Contraceptive History</SectionLabel>
-                    <p className="text-sm text-stone-700">{fv.contraceptiveHistory}</p>
+                    <div className="flex items-center gap-3">
+                        <p className="text-sm text-stone-700 font-semibold">{fv.contraceptiveHistory}</p>
+                        {(() => {
+                            const risk = CONTRACEPTIVE_METHODS.find(m => m.label === fv.contraceptiveHistory)?.risk;
+                            if (!risk) return null;
+                            const cls = risk === 'moderate' ? 'bg-amber-100 text-amber-700' :
+                                risk === 'low' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-emerald-100 text-emerald-700';
+                            return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${cls}`}>{risk} Risk</span>;
+                        })()}
+                    </div>
                 </Card>
             )}
 
@@ -355,9 +365,47 @@ const EMPTY_ABORTION = {
     type: "", year: "", ga: "", method: "", management: "", complications: "",
 };
 
+/* ─── Helper to transform finished pregnancy to history entry ────── */
+function transformToHistory(p) {
+    if (!p.deliveryDate) return null;
+    return {
+        year: p.deliveryDate.slice(0, 4),
+        outcome: p.babyStatus === "Stillbirth" ? "Stillbirth" :
+            p.babyStatus === "Neonatal Death" ? "Neonatal Death" : "Live Birth",
+        ancAttended: true,
+        placeOfDelivery: "Hospital",
+        ga: p.gaAtDelivery || "",
+        typeOfLabour: p.durationOfLabor ? "Spontaneous" : "",
+        modeOfDelivery: p.deliveryMode || "",
+        indication: "",
+        anaesthesia: "",
+        interventions: p.episiotomy === "Yes" ? "Episiotomy" : "",
+        complications: p.maternalComplications !== "None" ? p.maternalComplications : "",
+        babySex: p.babySex || "",
+        babyWeight: p.birthWeight ? `${p.birthWeight} kg` : "",
+        apgar: p.apgar5 ? `5min: ${p.apgar5}` : "",
+        timeOfBirth: p.deliveryTime || "",
+        congenitalAnomalies: p.babyStatus === "Congenital Anomaly" ? "Yes" : "",
+        babyComplications: p.babyStatus !== "Healthy & Stable" ? p.babyStatus : "",
+        immunisations: p.immunization ? Object.entries(p.immunization).filter(([_, v]) => v).map(([k]) => k.toUpperCase()).join(", ") : "",
+        breastfeeding: p.bfedInitiated === "Yes" ? "Exclusive (6 months)" : "",
+        stillbirthType: p.babyStatus === "Stillbirth" ? "Unknown" : "",
+        nndCause: p.babyStatus === "Neonatal Death" ? "Unknown" : "",
+    };
+}
+
 /* ─── Empty first visit form state ────────────────────────────────── */
 const EMPTY_FORM = (patient) => {
     const prev = patient.prevFirstVisit || {};
+
+    // If returning mother, the pregnancy she just "finished" in our system
+    // should be added to the previous pregnancies history.
+    const autoHistoryEntry = transformToHistory(patient);
+    const existingHistory = prev.obstetricHistory?.previousPregnancies || [];
+    const combinedHistory = autoHistoryEntry
+        ? [autoHistoryEntry, ...existingHistory]
+        : existingHistory;
+
     return {
         presentingComplaints: "",
         historyOfComplaints: "",
@@ -368,9 +416,12 @@ const EMPTY_FORM = (patient) => {
             epigastricPain: false, oedema: false,
         },
         menstrualHistory: { cycleNature: prev.menstrualHistory?.cycleNature || "", lmp: patient.lmp || "", regularCycles: prev.menstrualHistory?.regularCycles ?? true },
-        obstetricHistory: prev.obstetricHistory ? { ...prev.obstetricHistory } : {
+        obstetricHistory: prev.obstetricHistory ? {
+            ...prev.obstetricHistory,
+            previousPregnancies: combinedHistory
+        } : {
             detailedHistory: "",
-            previousPregnancies: [],
+            previousPregnancies: combinedHistory,
             abortions: [],
         },
         medicalHistory: prev.medicalHistory ? { ...prev.medicalHistory } : {
@@ -796,11 +847,41 @@ function FirstVisitForm({ patient, onSaved }) {
                 </div>
             </Section>
 
-            {/* 10. FP / Contraceptive History */}
             <Section title="FP / Contraceptive History" >
-                <FormTextarea label="Contraceptive History" value={form.contraceptiveHistory} onChange={e => set("contraceptiveHistory", e.target.value)}
-                    placeholder="Types used, duration, reason for discontinuation, satisfaction, complications..."
-                    rows={3} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormSelect
+                        label="Contraceptive Method Used"
+                        value={CONTRACEPTIVE_METHODS.find(m => m.label === form.contraceptiveHistory)?.label || ""}
+                        onChange={e => set("contraceptiveHistory", e.target.value)}
+                    >
+                        <option value="">Select Method</option>
+                        {CONTRACEPTIVE_METHODS.map(m => (
+                            <option key={m.label} value={m.label}>{m.label} ({m.risk})</option>
+                        ))}
+                    </FormSelect>
+                    {form.contraceptiveHistory && (
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Associated Risk Level</label>
+                            <div className={`px-3.5 py-2 text-xs rounded-xl font-bold uppercase tracking-wider ring-1 ${CONTRACEPTIVE_METHODS.find(m => m.label === form.contraceptiveHistory)?.risk === 'moderate'
+                                ? 'bg-amber-50 text-amber-700 ring-amber-200'
+                                : CONTRACEPTIVE_METHODS.find(m => m.label === form.contraceptiveHistory)?.risk === 'low'
+                                    ? 'bg-blue-50 text-blue-700 ring-blue-200'
+                                    : 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                                }`}>
+                                {CONTRACEPTIVE_METHODS.find(m => m.label === form.contraceptiveHistory)?.risk} Risk
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <div className="mt-3">
+                    <FormTextarea
+                        label="Additional FP Details"
+                        value={form.contraceptiveDetails || ""}
+                        onChange={e => set("contraceptiveDetails", e.target.value)}
+                        placeholder="Duration, reason for discontinuation, satisfaction, complications..."
+                        rows={2}
+                    />
+                </div>
             </Section>
 
             {/* 11. Nutritional History */}
@@ -835,7 +916,12 @@ function FirstVisitForm({ patient, onSaved }) {
             {/* 15. Examination */}
             <Section title="Physical Examination" >
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <FormInput label="General Condition" value={form.examination.generalCondition} onChange={e => setExam("generalCondition", e.target.value)} placeholder="Good / Fair / Poor" />
+                    <FormSelect label="General Condition" value={form.examination.generalCondition} onChange={e => setExam("generalCondition", e.target.value)}>
+                        <option value="">Select</option>
+                        <option>Good</option>
+                        <option>Fair</option>
+                        <option>Poor</option>
+                    </FormSelect>
                     <FormInput label="BP (mmHg)" value={form.examination.bp} onChange={e => setExam("bp", e.target.value)} placeholder="120/80" />
                     <FormInput label="Pulse (bpm)" type="number" value={form.examination.pulse} onChange={e => setExam("pulse", e.target.value)} placeholder="78" />
                     <FormInput label="Weight (kg)" type="number" value={form.examination.weight} onChange={e => setExam("weight", e.target.value)} placeholder="58" />
@@ -846,10 +932,25 @@ function FirstVisitForm({ patient, onSaved }) {
                             {examBMI ? `${examBMI}${parseFloat(examBMI) < 18.5 ? " — Low" : parseFloat(examBMI) > 24.9 ? " — High" : ""}` : "—"}
                         </div>
                     </div>
-                    <FormInput label="Breast Exam" value={form.examination.breastExam} onChange={e => setExam("breastExam", e.target.value)} placeholder="Normal / Abnormal" />
-                    <FormInput label="Abdominal Exam" value={form.examination.abdominalExam} onChange={e => setExam("abdominalExam", e.target.value)} placeholder="Uterus size, tenderness..." />
+                    <FormSelect label="Breast Exam" value={form.examination.breastExam} onChange={e => setExam("breastExam", e.target.value)}>
+                        <option value="">Select</option>
+                        <option>Normal</option>
+                        <option>Abnormal</option>
+                        <option>Not Done</option>
+                    </FormSelect>
+                    <FormSelect label="Abdominal Exam" value={form.examination.abdominalExam} onChange={e => setExam("abdominalExam", e.target.value)}>
+                        <option value="">Select</option>
+                        <option>Normal</option>
+                        <option>Abnormal</option>
+                        <option>Not Done</option>
+                    </FormSelect>
                     <FormInput label="Fundal Height (cm)" type="number" value={form.examination.fundalHeight} onChange={e => setExam("fundalHeight", e.target.value)} placeholder="20" />
-                    <FormInput label="Pelvic Exam" value={form.examination.pelvicExam} onChange={e => setExam("pelvicExam", e.target.value)} placeholder="Not done / Normal / Findings..." className="sm:col-span-2" />
+                    <FormSelect label="Pelvic Exam" value={form.examination.pelvicExam} onChange={e => setExam("pelvicExam", e.target.value)} className="sm:col-span-2">
+                        <option value="">Select</option>
+                        <option>Normal</option>
+                        <option>Abnormal</option>
+                        <option>Not Done</option>
+                    </FormSelect>
                 </div>
             </Section>
 

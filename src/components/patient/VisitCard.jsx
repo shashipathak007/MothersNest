@@ -1,7 +1,7 @@
 import Card from "../ui/Card.jsx";
 import { VISIT_BADGE, fmtDate } from "../../utils/helpers.js";
 
-export default function VisitCard({ visit, isLatest = false }) {
+export default function VisitCard({ visit, isLatest = false, onEdit }) {
   const typeCls = VISIT_BADGE[visit.type] ?? "bg-stone-100 text-stone-600";
 
   const bpCls =
@@ -22,11 +22,14 @@ export default function VisitCard({ visit, isLatest = false }) {
         "bg-stone-100 text-stone-600";
 
   return (
-    <div className="relative pl-10">
-      <span className={`absolute left-3.5 top-5 w-3 h-3 rounded-full border-2 border-[#f8fafc] shadow-sm ${isLatest ? "bg-brand-700 ring-4 ring-brand-100" : "bg-stone-300"
+    <div className="relative pl-10 group">
+      <span className={`absolute left-3.5 top-5 w-3 h-3 rounded-full border-2 border-[#f8fafc] shadow-sm transition-transform group-hover:scale-110 ${isLatest ? "bg-brand-700 ring-4 ring-brand-100" : "bg-stone-300"
         }`} />
 
-      <Card className={`p-4 ${isLatest ? "border-brand-200" : ""}`}>
+      <Card
+        onClick={onEdit ? onEdit : undefined}
+        className={`p-4 ${onEdit ? "cursor-pointer hover:border-brand-300 hover:shadow-md" : ""} transition-all ${isLatest ? "border-brand-200" : ""}`}
+      >
         {/* Header */}
         <div className="flex items-center flex-wrap gap-2 mb-3">
           <span className="text-xs text-stone-400 font-mono">{fmtDate(visit.date)}</span>
@@ -35,9 +38,21 @@ export default function VisitCard({ visit, isLatest = false }) {
               GA {visit.ga}
             </span>
           )}
-          <span className={`ml-auto text-[10px] font-semibold px-2.5 py-1 rounded-full ${typeCls}`}>
+          <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${typeCls}`}>
             {visit.type}
           </span>
+
+          {onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="ml-auto p-1.5 text-stone-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+              title="Edit Visit"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Vitals chips */}

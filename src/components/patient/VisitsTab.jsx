@@ -1,10 +1,13 @@
+import { useState } from "react";
 import Card from "../ui/Card.jsx";
 import EmptyState from "../ui/EmptyState.jsx";
 import Button from "../ui/Button.jsx";
 import VisitCard from "./VisitCard.jsx";
+import AddVisitModal from "../modals/AddVisitModal.jsx";
 import { ANC_SCHEDULE, VISIT_TYPES } from "../../utils/helpers.js";
 
-export default function VisitsTab({ visits, onAdd, missedContacts = [] }) {
+export default function VisitsTab({ patient, visits, onAdd, missedContacts = [] }) {
+  const [editingVisit, setEditingVisit] = useState(null);
   const completedContacts = ANC_SCHEDULE.filter(c =>
     visits.some(v => v.type === c.visitType || v.ancContact === c.contact)
   );
@@ -19,15 +22,14 @@ export default function VisitsTab({ visits, onAdd, missedContacts = [] }) {
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
           {ANC_SCHEDULE.map(c => {
-            const done   = visits.some(v => v.type === c.visitType || v.ancContact === c.contact);
+            const done = visits.some(v => v.type === c.visitType || v.ancContact === c.contact);
             const missed = missedContacts.some(m => m.contact === c.contact);
             return (
               <div key={c.contact}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl text-center ${
-                  done   ? "bg-emerald-50 border border-emerald-200" :
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl text-center ${done ? "bg-emerald-50 border border-emerald-200" :
                   missed ? "bg-amber-50 border border-amber-300" :
-                           "bg-stone-50 border border-stone-200"
-                }`}
+                    "bg-stone-50 border border-stone-200"
+                  }`}
               >
                 <span className={`text-base ${done ? "text-emerald-600" : missed ? "text-amber-500" : "text-stone-300"}`}>
                   {done ? "✓" : missed ? "⏰" : "○"}

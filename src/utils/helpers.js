@@ -366,6 +366,24 @@ export const VISIT_TYPES = [
   "Normal Visit",
 ];
 
+export const CONTRACEPTIVE_METHODS = [
+  { label: "None", risk: "normal" },
+  { label: "Oral Pills", risk: "low" },
+  { label: "Implant", risk: "low" },
+  { label: "Copper IUD", risk: "low" },
+  { label: "Hormonal IUD", risk: "low" },
+  { label: "Emergency Pill", risk: "low" },
+  { label: "Injectable (DMPA)", risk: "moderate" },
+];
+
+export const DELIVERY_TYPES = [
+  { label: "Normal Vaginal Delivery (SVD)", risk: "low" },
+  { label: "Cesarean Section (LSCS)", risk: "moderate" },
+  { label: "Forceps Delivery", risk: "moderate" },
+  { label: "Vacuum Delivery", risk: "moderate" },
+  { label: "Assisted Breech Delivery", risk: "high" },
+];
+
 export const VISIT_BADGE = {
   "ANC 1st Visit (≤12 weeks)": "bg-sky-100 text-sky-700",
   "ANC 2nd Visit (16 weeks)": "bg-blue-100 text-blue-700",
