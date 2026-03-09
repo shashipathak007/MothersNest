@@ -79,7 +79,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-bold text-stone-900" style={{ fontFamily: "var(--font-display)" }}>
-                  Postnatal Patients 
+                  Postnatal Patients
                 </h2>
                 <p className="text-xs text-stone-400 mt-0.5">{postnatal.length} postnatal patient{postnatal.length !== 1 ? "s" : ""}</p>
               </div>

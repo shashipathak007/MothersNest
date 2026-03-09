@@ -243,7 +243,7 @@ export default function RegisterPage() {
               Register Patient
             </h1>
             <p className="text-sm text-stone-400">
-              Is this a new patient or a returning one?
+              Are you a new patient or a returning one?
             </p>
           </div>
 
@@ -255,7 +255,7 @@ export default function RegisterPage() {
               onClick={() => { setPatientMode("new"); setStep(1); }}
               className="group relative text-left p-6 rounded-2xl border-2 border-stone-200 bg-white hover:border-emerald-400 hover:shadow-lg hover:shadow-emerald-100 transition-all duration-200 active:scale-[0.98] overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              <div className="absolute inset-0 bg-linear-to-br from-emerald-50/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               <div className="relative">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-100 group-hover:bg-emerald-200 flex items-center justify-center mb-5 transition-colors duration-200">
                   <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -286,7 +286,7 @@ export default function RegisterPage() {
                 }`}
             >
               <div
-                className={`absolute inset-0 bg-gradient-to-br from-brand-50/80 to-transparent transition-opacity duration-200
+                className={`absolute inset-0 bg-linear-to-br from-brand-50/80 to-transparent transition-opacity duration-200
                   ${patientMode === "returning" ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
               />
               {patientMode === "returning" && (
@@ -308,7 +308,7 @@ export default function RegisterPage() {
                   Returning Patient
                 </p>
                 <p className="text-xs text-stone-400 leading-snug">
-                  Previously registered with existing postnatal records
+                  Previously registered with existing pregnancy records
                 </p>
                 <div
                   className={`mt-5 flex items-center gap-1 text-[11px] font-semibold text-brand-600 transition-opacity duration-200
@@ -349,7 +349,7 @@ export default function RegisterPage() {
                         onClick={() => selectReturningPatient(p)}
                         className="w-full text-left flex items-center gap-3 p-3 rounded-xl border border-stone-100 hover:border-brand-300 hover:bg-brand-50/40 transition-colors group/row"
                       >
-                        <div className="w-9 h-9 rounded-full bg-stone-100 group-hover/row:bg-brand-100 flex items-center justify-center flex-shrink-0 text-sm font-bold text-stone-500 group-hover/row:text-brand-600 transition-colors">
+                        <div className="w-9 h-9 rounded-full bg-stone-100 group-hover/row:bg-brand-100 flex items-center justify-center shrink-0 text-sm font-bold text-stone-500 group-hover/row:text-brand-600 transition-colors">
                           {p.name.charAt(0)}
                         </div>
                         <div className="min-w-0 flex-1">

@@ -3,7 +3,7 @@ const fieldCls =
   "focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-transparent " +
   "appearance-none pr-8 transition-shadow";
 
-export default function FormSelect({ label, children, error, className = "", ...rest }) {
+export default function FormSelect({ label, children, options, error, className = "", ...rest }) {
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
@@ -13,7 +13,15 @@ export default function FormSelect({ label, children, error, className = "", ...
       )}
       <div className="relative">
         <select className={`${fieldCls} ${error ? "border-rose-400" : ""}`} {...rest}>
-          {children}
+          {options ? (
+            options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))
+          ) : (
+            children
+          )}
         </select>
         <svg
           className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400"

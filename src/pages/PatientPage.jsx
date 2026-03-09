@@ -12,6 +12,7 @@ import VisitsTab from "../components/patient/VisitsTab.jsx";
 import AddVisitModal from "../components/modals/AddVisitModal.jsx";
 import AddLabModal from "../components/modals/AddLabModal.jsx";
 import RecordDeliveryModal from "../components/patient/RecordDeliveryModal.jsx";
+import RecordPregnancyModal from "../components/modals/RecordPregnancyModal.jsx";
 import Button from "../components/ui/Button.jsx";
 import { getMissedContacts, today } from "../utils/helpers.js";
 
@@ -22,6 +23,7 @@ export default function PatientPage() {
   const [showVisit, setShowVisit] = useState(false);
   const [showLab, setShowLab] = useState(false);
   const [showDelivery, setShowDelivery] = useState(false);
+  const [showPregnancy, setShowPregnancy] = useState(false);
 
   const patient = state.patients.find(p => p.id === id)
     || (state.postnatalPatients || []).find(p => p.id === id);
@@ -45,6 +47,11 @@ export default function PatientPage() {
         <BackButton label="Dashboard" to="/" />
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" onClick={() => setShowVisit(true)}>+ Visit</Button>
+          {isPostnatal && (
+            <Button size="sm" variant="success" onClick={() => setShowPregnancy(true)}>
+              Record Pregnancy
+            </Button>
+          )}
           {!isPostnatal && (
             <Button size="sm" variant="success" onClick={() => setShowDelivery(true)}>
               Record Delivery
@@ -135,12 +142,14 @@ export default function PatientPage() {
       {showLab && <AddLabModal patient={patient} onClose={() => setShowLab(false)} />}
       <RecordDeliveryModal
         open={showDelivery}
+        patient={patient}
         onClose={() => setShowDelivery(false)}
         onSave={(data) => {
           dispatch({ type: "RECORD_DELIVERY", patientId: patient.id, payload: data });
           setShowDelivery(false);
         }}
       />
+      {showPregnancy && <RecordPregnancyModal patient={patient} onClose={() => setShowPregnancy(false)} />}
     </AppShell>
   );
 }

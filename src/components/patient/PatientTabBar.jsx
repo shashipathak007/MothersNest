@@ -5,11 +5,10 @@ export default function PatientTabBar({ tabs, active, onChange }) {
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`px-4 py-3 text-xs font-semibold border-b-2 transition-none whitespace-nowrap relative ${
-            active === tab.id
-              ? "border-brand-700 text-brand-700"
+          className={`px-4 py-3 text-xs font-semibold border-b-[3px] transition-all whitespace-nowrap relative ${active === tab.id
+              ? "border-brand-600 text-brand-700"
               : "border-transparent text-stone-400 hover:text-stone-700"
-          }`}
+            }`}
         >
           {tab.label}
           {tab.dot && (

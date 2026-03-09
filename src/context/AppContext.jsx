@@ -659,6 +659,30 @@ function reducer(state, action) {
           return p;
         })
       };
+    case "RECORD_NEW_PREGNANCY": {
+      const p = state.postnatalPatients.find(x => x.id === action.patientId);
+      if (!p) return state;
+
+      const newP = {
+        ...p,
+        ...action.payload,
+        patientType: "antenatal",
+        registeredOn: new Date().toISOString().split('T')[0],
+        visits: [],
+        labs: [],
+        tags: [],
+        riskLevel: "low",
+        // We might want to keep some aspects of the previous firstVisit or clear it
+        // Usually, a new pregnancy requires a new clinical evaluation
+        firstVisit: null,
+      };
+
+      return {
+        ...state,
+        postnatalPatients: state.postnatalPatients.filter(x => x.id !== action.patientId),
+        patients: [newP, ...(state.patients || [])]
+      };
+    }
     default: return state;
   }
 }
