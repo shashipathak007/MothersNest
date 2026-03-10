@@ -7,7 +7,7 @@ import FormTextarea from "../ui/FormTextarea.jsx";
 import FormSelect from "../ui/FormSelect.jsx";
 import Button from "../ui/Button.jsx";
 import KVRow from "../ui/KVRow.jsx";
-import { today, calcBMI, autoRiskFromFirstVisit, RISK_CONFIG, CONTRACEPTIVE_METHODS } from "../../utils/helpers.js";
+import { today, calcBMI, autoRiskFromFirstVisit, RISK_CONFIG, CONTRACEPTIVE_METHODS, PREV_PREG_OPTIONS, getPrevPregRisk } from "../../utils/helpers.js";
 
 /* ─── Collapsible section wrapper ─────────────────────────────────── */
 function Section({ title, icon, children, defaultOpen = false }) {
@@ -38,6 +38,37 @@ function BoolToggle({ label, value, onChange }) {
             <input type="checkbox" checked={!!value} onChange={e => onChange(e.target.checked)} className="w-4 h-4 accent-rose-600 shrink-0" />
             <span className={`text-xs font-semibold ${value ? "text-rose-800" : "text-stone-700"}`}>{label}</span>
         </label>
+    );
+}
+
+/* ─── Risk-coloured select dropdown ───────────────────────────────── */
+function RiskSelect({ label, value, onChange, options, placeholder = "Select" }) {
+    const risk = options.find(o => o.label === value)?.risk || null;
+    const riskCls = risk === "high" ? "border-rose-400 bg-rose-50" :
+        risk === "moderate" ? "border-amber-400 bg-amber-50" :
+            risk === "low" ? "border-emerald-400 bg-emerald-50" : "border-stone-200 bg-white";
+    const riskDot = risk === "high" ? "🔴" : risk === "moderate" ? "🟡" : risk === "low" ? "🟢" : "";
+    const riskLabel = risk === "high" ? "High Risk" : risk === "moderate" ? "Moderate" : risk === "low" ? "Low" : "";
+
+    return (
+        <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider">{label}</label>
+            <select
+                value={value}
+                onChange={onChange}
+                className={`px-3 py-2 text-sm border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors ${riskCls}`}
+            >
+                <option value="">{placeholder}</option>
+                {options.map(o => (
+                    <option key={o.label} value={o.label}>{o.label}</option>
+                ))}
+            </select>
+            {risk && (
+                <span className={`text-[10px] font-bold ${risk === "high" ? "text-rose-600" : risk === "moderate" ? "text-amber-600" : "text-emerald-600"}`}>
+                    {riskDot} {riskLabel}
+                </span>
+            )}
+        </div>
     );
 }
 
@@ -350,11 +381,11 @@ function FirstVisitReadView({ fv }) {
 
 /* ─── Empty per-pregnancy / abortion templates ───────────────────── */
 const EMPTY_PREGNANCY = {
-    year: "", outcome: "Live Birth", ancAttended: true, placeOfDelivery: "",
+    year: "", outcome: "Live Birth", ancAttended: "Yes", interpregnancyInterval: "", placeOfDelivery: "",
     ga: "", typeOfLabour: "", modeOfDelivery: "", indication: "",
-    anaesthesia: "", interventions: "", complications: "",
+    anaesthesia: "", interventions: "", complications: "None",
     babySex: "", babyWeight: "", apgar: "", timeOfBirth: "",
-    congenitalAnomalies: "", babyComplications: "", immunisations: "", breastfeeding: "",
+    congenitalAnomalies: "None", babyComplications: "None", immunisations: "", breastfeeding: "",
     stillbirthType: "", nndCause: "",
     prevCS: false, prevPPH: false, prevPreterm: false,
     prevStillbirth: false, prevEclampsia: false, prevGDM: false, prevNeonatalDeath: false,
@@ -372,23 +403,24 @@ function transformToHistory(p) {
         year: p.deliveryDate.slice(0, 4),
         outcome: p.babyStatus === "Stillbirth" ? "Stillbirth" :
             p.babyStatus === "Neonatal Death" ? "Neonatal Death" : "Live Birth",
-        ancAttended: true,
+        ancAttended: "Yes",
+        interpregnancyInterval: "",
         placeOfDelivery: "Hospital",
         ga: p.gaAtDelivery || "",
         typeOfLabour: p.durationOfLabor ? "Spontaneous" : "",
         modeOfDelivery: p.deliveryMode || "",
         indication: "",
-        anaesthesia: "",
-        interventions: p.episiotomy === "Yes" ? "Episiotomy" : "",
-        complications: p.maternalComplications !== "None" ? p.maternalComplications : "",
+        anaesthesia: "None / Local",
+        interventions: p.episiotomy === "Yes" ? "Episiotomy / ARM / Oxytocin" : "None",
+        complications: p.maternalComplications !== "None" ? p.maternalComplications : "None",
         babySex: p.babySex || "",
-        babyWeight: p.birthWeight ? `${p.birthWeight} kg` : "",
+        babyWeight: p.birthWeight ? `${p.birthWeight}` : "",
         apgar: p.apgar5 ? `5min: ${p.apgar5}` : "",
         timeOfBirth: p.deliveryTime || "",
-        congenitalAnomalies: p.babyStatus === "Congenital Anomaly" ? "Yes" : "",
-        babyComplications: p.babyStatus !== "Healthy & Stable" ? p.babyStatus : "",
+        congenitalAnomalies: p.babyStatus === "Congenital Anomaly" ? "Present" : "None",
+        babyComplications: p.babyStatus !== "Healthy & Stable" && p.babyStatus !== "Congenital Anomaly" ? p.babyStatus : "None",
         immunisations: p.immunization ? Object.entries(p.immunization).filter(([_, v]) => v).map(([k]) => k.toUpperCase()).join(", ") : "",
-        breastfeeding: p.bfedInitiated === "Yes" ? "Exclusive (6 months)" : "",
+        breastfeeding: p.bfedInitiated === "Yes" ? "Exclusive (6 months)" : "Not Breastfed",
         stillbirthType: p.babyStatus === "Stillbirth" ? "Unknown" : "",
         nndCause: p.babyStatus === "Neonatal Death" ? "Unknown" : "",
     };
@@ -571,23 +603,17 @@ function FirstVisitForm({ patient, onSaved }) {
                                     <button type="button" onClick={removePregEntry} className="text-[10px] text-rose-500 font-semibold hover:text-rose-700">✕ Remove</button>
                                 </div>
 
-                                {/* Row 1: Year, Outcome, ANC */}
+                                {/* Row 1: Year, Outcome, ANC, Interpregnancy Interval */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                                     <FormInput label="Year" value={preg.year} onChange={e => setPregField("year", e.target.value)} placeholder="2022" />
-                                    <FormSelect label="Outcome" value={preg.outcome} onChange={e => setPregField("outcome", e.target.value)}>
-                                        <option value="Live Birth">Live Birth</option>
-                                        <option value="Stillbirth">Stillbirth</option>
-                                        <option value="Neonatal Death">Neonatal Death (early NND)</option>
-                                    </FormSelect>
-                                    <FormSelect label="ANC Attended?" value={preg.ancAttended ? "yes" : "no"} onChange={e => setPregField("ancAttended", e.target.value === "yes")}>
-                                        <option value="yes">Yes</option>
-                                        <option value="no">No</option>
-                                    </FormSelect>
-                                    <FormInput label="GA at Delivery" value={preg.ga} onChange={e => setPregField("ga", e.target.value)} placeholder="39 weeks" />
+                                    <RiskSelect label="Outcome" value={preg.outcome} onChange={e => setPregField("outcome", e.target.value)} options={PREV_PREG_OPTIONS.outcome} />
+                                    <RiskSelect label="ANC Attended?" value={preg.ancAttended} onChange={e => setPregField("ancAttended", e.target.value)} options={PREV_PREG_OPTIONS.ancAttended} />
+                                    <RiskSelect label="Interpregnancy Interval" value={preg.interpregnancyInterval} onChange={e => setPregField("interpregnancyInterval", e.target.value)} options={PREV_PREG_OPTIONS.interpregnancyInterval} />
                                 </div>
 
-                                {/* Row 2: Place, Labour, Mode, Indication */}
+                                {/* Row 2: GA, Place, Labour, Mode */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                                    <RiskSelect label="GA at Delivery" value={preg.ga} onChange={e => setPregField("ga", e.target.value)} options={PREV_PREG_OPTIONS.gaAtDelivery} />
                                     <FormSelect label="Place of Delivery" value={preg.placeOfDelivery} onChange={e => setPregField("placeOfDelivery", e.target.value)}>
                                         <option value="">Select</option>
                                         <option>Hospital</option>
@@ -601,28 +627,14 @@ function FirstVisitForm({ patient, onSaved }) {
                                         <option>Induced</option>
                                         <option>Augmented</option>
                                     </FormSelect>
-                                    <FormSelect label="Mode of Delivery" value={preg.modeOfDelivery} onChange={e => setPregField("modeOfDelivery", e.target.value)}>
-                                        <option value="">Select</option>
-                                        <option>SVD (Normal)</option>
-                                        <option>LSCS</option>
-                                        <option>Forceps</option>
-                                        <option>Vacuum</option>
-                                        <option>Assisted Breech</option>
-                                    </FormSelect>
-                                    <FormInput label="Indication (if operative)" value={preg.indication} onChange={e => setPregField("indication", e.target.value)} placeholder="Failure to progress, Fetal distress..." />
+                                    <RiskSelect label="Mode of Delivery" value={preg.modeOfDelivery} onChange={e => setPregField("modeOfDelivery", e.target.value)} options={PREV_PREG_OPTIONS.modeOfDelivery} />
                                 </div>
 
                                 {/* Row 3: Anaesthesia, Interventions, Complications */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                                    <FormSelect label="Anaesthesia" value={preg.anaesthesia} onChange={e => setPregField("anaesthesia", e.target.value)}>
-                                        <option value="">None / Not Applicable</option>
-                                        <option>Spinal</option>
-                                        <option>Epidural</option>
-                                        <option>General</option>
-                                        <option>Local</option>
-                                    </FormSelect>
-                                    <FormInput label="Interventions during Labour" value={preg.interventions} onChange={e => setPregField("interventions", e.target.value)} placeholder="Episiotomy, ARM, Oxytocin..." />
-                                    <FormInput label="Complications" value={preg.complications} onChange={e => setPregField("complications", e.target.value)} placeholder="PPH, Eclampsia, GDM..." />
+                                    <RiskSelect label="Anaesthesia" value={preg.anaesthesia} onChange={e => setPregField("anaesthesia", e.target.value)} options={PREV_PREG_OPTIONS.anaesthesia} />
+                                    <RiskSelect label="Interventions during Labour" value={preg.interventions} onChange={e => setPregField("interventions", e.target.value)} options={PREV_PREG_OPTIONS.interventions} />
+                                    <RiskSelect label="Complications" value={preg.complications} onChange={e => setPregField("complications", e.target.value)} options={PREV_PREG_OPTIONS.complications} />
                                 </div>
 
                                 {/* Baby details sub-section */}
@@ -635,13 +647,13 @@ function FirstVisitForm({ patient, onSaved }) {
                                             <option>Female</option>
                                             <option>Ambiguous</option>
                                         </FormSelect>
-                                        <FormInput label="Birth Weight" value={preg.babyWeight} onChange={e => setPregField("babyWeight", e.target.value)} placeholder="3.1 kg" />
+                                        <RiskSelect label="Birth Weight" value={preg.babyWeight} onChange={e => setPregField("babyWeight", e.target.value)} options={PREV_PREG_OPTIONS.birthWeight} />
                                         <FormInput label="Apgar Score" value={preg.apgar} onChange={e => setPregField("apgar", e.target.value)} placeholder="8/9" />
-                                        <FormInput label="Time of Birth" value={preg.timeOfBirth} onChange={e => setPregField("timeOfBirth", e.target.value)} placeholder="Term / Preterm" />
+                                        <FormInput label="Time of Birth" value={preg.timeOfBirth} onChange={e => setPregField("timeOfBirth", e.target.value)} placeholder="08:45 AM" />
                                     </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        <FormInput label="Congenital Anomalies" value={preg.congenitalAnomalies} onChange={e => setPregField("congenitalAnomalies", e.target.value)} placeholder="None / Specify..." />
-                                        <FormInput label="Baby Complications" value={preg.babyComplications} onChange={e => setPregField("babyComplications", e.target.value)} placeholder="NICU, Jaundice..." />
+                                        <RiskSelect label="Congenital Anomalies" value={preg.congenitalAnomalies} onChange={e => setPregField("congenitalAnomalies", e.target.value)} options={PREV_PREG_OPTIONS.congenitalAnomalies} />
+                                        <RiskSelect label="Baby Complications" value={preg.babyComplications} onChange={e => setPregField("babyComplications", e.target.value)} options={PREV_PREG_OPTIONS.babyComplications} />
                                         <FormInput label="Immunisations" value={preg.immunisations} onChange={e => setPregField("immunisations", e.target.value)} placeholder="BCG, OPV..." />
                                         <FormSelect label="Breastfeeding" value={preg.breastfeeding} onChange={e => setPregField("breastfeeding", e.target.value)}>
                                             <option value="">Select</option>

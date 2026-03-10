@@ -29,7 +29,7 @@ export default function RegPregnancy({ form, set, patientMode }) {
             className="col-span-2 sm:col-span-1"
           />
           <div className="col-span-2 sm:col-span-1 flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Estimated Date of Delivery</label>
+            <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">EDD</label>
             <div className="px-3.5 py-2.5 text-sm bg-blue-50 border border-blue-200 rounded-xl text-blue-800 font-semibold">
               {form.edd || "—"}
             </div>

@@ -6,7 +6,11 @@ import FormInput from "../ui/FormInput.jsx";
 import FormSelect from "../ui/FormSelect.jsx";
 import FormTextarea from "../ui/FormTextarea.jsx";
 import SectionLabel from "../ui/SectionLabel.jsx";
-import { today, uid, calcGA, calcBMI, VISIT_TYPES, bpFlag, fetalHRFlag, pulseFlag, ANC_SCHEDULE, getCurrentANCContact, ANC_VISIT_TESTS, autoLabStatus, getLabUnit, getLabMeta, getLabOptions } from "../../utils/helpers.js";
+import { 
+  today, uid, calcGA, calcBMI, VISIT_TYPES, bpFlag, fetalHRFlag, 
+  pulseFlag, ANC_SCHEDULE, getCurrentANCContact, ANC_VISIT_TESTS, 
+  autoLabStatus, getLabUnit, getLabMeta, getLabOptions 
+} from "../../utils/helpers.js";
 
 const OEDEMA_OPTIONS = ["None (−)", "Mild (+)", "Moderate (++)", "Severe (+++)"];
 const PRESENTATION_OPTIONS = ["Cephalic", "Breech", "Transverse", "Not assessed"];
@@ -24,7 +28,7 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
   const isEdit = !!initialVisit;
   const lastV = patient.visits?.[0];
 
-  const [form, setForm] = useState(initialVisit || {
+  const defaults = {
     date: today(), type: "Unscheduled ANC Visit",
     ga: calcGA(patient.lmp) || "",
     bp: "", pulse: lastV?.pulse || "",
@@ -36,7 +40,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
     presentation: lastV?.presentation || "",
     findings: "", plan: "", examNotes: "",
     tests: [],
-    // Per-visit complaints & screening
     presentingComplaints: "",
     reviewOfSystems: {
       pvBleeding: false, pvDischarge: false, pelvicPain: false,
@@ -44,7 +47,26 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
       visualDisturbance: false, epigastricPain: false, oedemaROS: false,
     },
     gbvScreening: "",
-  });
+    gbvRisk: false,
+  };
+
+  const buildEditForm = (visit) => {
+    const hCm = parseFloat(visit.height) || 0;
+    return {
+      ...defaults,
+      ...visit,
+      heightFt: hCm ? Math.floor(hCm / 30.48).toString() : defaults.heightFt,
+      heightIn: hCm ? Math.round((hCm % 30.48) / 2.54).toString() : defaults.heightIn,
+      reviewOfSystems: { ...defaults.reviewOfSystems, ...(visit.reviewOfSystems || {}) },
+      tests: visit.tests || [],
+      presentingComplaints: visit.presentingComplaints || "",
+      gbvScreening: visit.gbvScreening || "",
+      gbvRisk: visit.gbvRisk || false,
+      examNotes: visit.examNotes || "",
+    };
+  };
+
+  const [form, setForm] = useState(isEdit ? buildEditForm(initialVisit) : defaults);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -53,7 +75,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
       const currentGa = calcGA(patient.lmp);
       set("ga", currentGa);
 
-      // Auto-select type based on GA
       const currentAnc = getCurrentANCContact(patient.lmp);
       if (currentAnc) {
         const typeStr = ANC_SCHEDULE.find(c => c.contact === currentAnc)?.visitType;
@@ -64,12 +85,10 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
     }
   }, [form.date]);
 
-  // Handle auto-populating tests when type/contact changes
   useEffect(() => {
     const contact = detectContact(form.type);
     if (contact) {
       const suggested = getTestsForContact(contact);
-      // Keep existing test values, add new ones from suggestions
       setForm(prev => {
         const existingTests = [...prev.tests];
         const newTests = suggested.filter(s => !existingTests.some(e => e.test === s)).map(t => ({
@@ -142,16 +161,16 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
         type: "UPDATE_VISIT",
         patientId: patient.id,
         visitId: initialVisit.id,
-        payload: { ...form, bmi, height: heightCm, bpFlag: bpF, fhrFlag: fhrF, pulseFlag: pulseF },
+        payload: { ...form, bmi, height: heightCm, bpFlag: bpF, fhrFlag: fhrF, pulseFlag: pulseF, gbvRisk: form.gbvRisk },
       });
     } else {
       dispatch({
         type: "ADD_VISIT",
         patientId: patient.id,
-        payload: { ...form, bmi, height: heightCm, id: uid(), ancContact: contact, bpFlag: bpF, fhrFlag: fhrF, pulseFlag: pulseF },
+        payload: { ...form, bmi, height: heightCm, id: uid(), ancContact: contact, bpFlag: bpF, fhrFlag: fhrF, pulseFlag: pulseF, gbvRisk: form.gbvRisk },
       });
     }
-    // Add completed tests to patient's lab history automatically
+    
     form.tests.forEach(testObj => {
       if (testObj.value.trim() !== "") {
         dispatch({
@@ -224,8 +243,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
         <div>
           <SectionLabel>Vitals & Examination</SectionLabel>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-
-            {/* GA auto */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">GA (auto)</label>
               <div className="px-3.5 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-800 font-semibold min-h-[42px]">
@@ -233,7 +250,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
               </div>
             </div>
 
-            {/* BP */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">BP (mmHg)</label>
               <input value={form.bp} onChange={e => set("bp", e.target.value)} placeholder="120/80" className={bpFieldCls} />
@@ -248,7 +264,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
               )}
             </div>
 
-            {/* Pulse */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Pulse (bpm)</label>
               <input type="number" value={form.pulse} onChange={e => set("pulse", e.target.value)} placeholder="80" className={pulseFieldCls} />
@@ -275,7 +290,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
               </div>
             </div>
 
-            {/* Fetal HR */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Fetal HR (bpm)</label>
               <input type="number" value={form.fetalHR} onChange={e => set("fetalHR", e.target.value)} placeholder="140" className={fhrFieldCls} />
@@ -300,9 +314,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
               </FormSelect>
               {form.oedema === "None (−)" && <p className="text-[10px] font-bold uppercase text-emerald-600">✓ Normal</p>}
               {form.oedema && form.oedema !== "None (−)" && <p className="text-[10px] font-bold uppercase text-orange-600">⚠ Abnormal</p>}
-            </div>
-
-            <div className="flex flex-col gap-1.5">
             </div>
 
             <div className="flex flex-col gap-1.5 col-span-2">
@@ -334,11 +345,29 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
             />
           </div>
 
-          {/* GBV Screening */}
-          <div>
+          {/* GBV Screening Section */}
+          <div className="space-y-2 mt-4">
             <SectionLabel>GBV Screening</SectionLabel>
+            <div className="mb-2">
+              <label className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all ${form.gbvRisk
+                ? "bg-rose-50 border-rose-300 ring-1 ring-rose-200"
+                : "bg-stone-50 border-stone-200 hover:bg-stone-100"
+                }`}>
+                <input
+                  type="checkbox"
+                  checked={form.gbvRisk}
+                  onChange={e => set("gbvRisk", e.target.checked)}
+                  className="w-4 h-4 rounded accent-rose-600"
+                />
+                <div className="flex-1">
+                  <p className={`text-xs font-bold ${form.gbvRisk ? "text-rose-800" : "text-stone-700"}`}>
+                    Gender-Based Violence
+                  </p>
+                </div>
+                {form.gbvRisk && <span className="text-rose-500 text-sm animate-pulse">⚠</span>}
+              </label>
+            </div>
             <FormTextarea
-              label="Gender-Based Violence Screening"
               value={form.gbvScreening}
               onChange={e => set("gbvScreening", e.target.value)}
               placeholder="Screening results, concerns disclosed..."
@@ -346,72 +375,81 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
             />
           </div>
 
-          {/* Tests Section integrated into Visit */}
+          {/* Tests Section */}
           {form.tests.length > 0 && (
-            <div>
+            <div className="mt-6">
               <SectionLabel>Investigations / Tests</SectionLabel>
               <p className="text-[11px] text-stone-500 mb-3">Tests recommended for this ANC visit. Enter values directly.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {form.tests.map((t, idx) => (
-                  <div key={t.test} className={`p-3 border rounded-xl flex flex-col gap-2 ${t.status === "abnormal" ? "bg-rose-50 border-rose-200" :
-                    t.status === "normal" ? "bg-emerald-50 border-emerald-200" :
-                      "bg-stone-50 border-stone-200"
-                    }`}>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-[11px] font-bold uppercase tracking-wider ${t.status === "abnormal" ? "text-rose-800" :
-                        t.status === "normal" ? "text-emerald-800" :
-                          "text-stone-600"
-                        }`}>{t.test}</span>
-                      {t.status !== "pending" && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.status === "abnormal" ? "bg-rose-200 text-rose-800" : "bg-emerald-200 text-emerald-800"
-                          }`}>
-                          {t.status === "abnormal" ? "⚠ Abnormal" : "✓ Normal"}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-auto">
-                      {(() => {
-                        const options = getLabOptions(t.test);
-                        if (options) {
+                {form.tests.map((t, idx) => {
+                  const bgCls = t.status === "abnormal" ? "bg-rose-50 border-rose-200" :
+                    t.status === "moderate" ? "bg-amber-50 border-amber-200" :
+                      t.status === "normal" ? "bg-emerald-50 border-emerald-200" :
+                        "bg-stone-50 border-stone-200";
+                  const labelCls = t.status === "abnormal" ? "text-rose-800" :
+                    t.status === "moderate" ? "text-amber-800" :
+                      t.status === "normal" ? "text-emerald-800" :
+                        "text-stone-600";
+                  const pillCls = t.status === "abnormal" ? "bg-rose-200 text-rose-800" :
+                    t.status === "moderate" ? "bg-amber-200 text-amber-800" :
+                      "bg-emerald-200 text-emerald-800";
+                  const pillLabel = t.status === "abnormal" ? "⚠ High Risk" :
+                    t.status === "moderate" ? "⚡ Moderate" :
+                      t.status === "normal" ? "✓ Normal" : "";
+
+                  return (
+                    <div key={t.test} className={`p-3 border rounded-xl flex flex-col gap-2 ${bgCls}`}>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[11px] font-bold uppercase tracking-wider ${labelCls}`}>{t.test}</span>
+                        {t.status !== "pending" && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pillCls}`}>
+                            {pillLabel}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-auto">
+                        {(() => {
+                          const options = getLabOptions(t.test);
+                          if (options) {
+                            return (
+                              <select
+                                value={t.value}
+                                onChange={(e) => handleTestChange(idx, e.target.value)}
+                                className="flex-1 w-full px-3 py-1.5 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
+                              >
+                                <option value="">Select...</option>
+                                {options.map(o => <option key={o} value={o}>{o}</option>)}
+                              </select>
+                            );
+                          }
+                          const meta = getLabMeta(t.test);
+                          let ph = "Result value...";
+                          if (meta) {
+                            if (meta.text) ph = "e.g. Normal, Negative";
+                            else if (meta.low !== null && meta.high !== null) ph = `Normal: ${meta.low}–${meta.high}`;
+                            else if (meta.low !== null) ph = `Normal: >${meta.low}`;
+                            else if (meta.high !== null) ph = `Normal: <${meta.high}`;
+                          }
                           return (
-                            <select
+                            <input
+                              type="text"
+                              placeholder={ph}
                               value={t.value}
                               onChange={(e) => handleTestChange(idx, e.target.value)}
                               className="flex-1 w-full px-3 py-1.5 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
-                            >
-                              <option value="">Select...</option>
-                              {options.map(o => <option key={o} value={o}>{o}</option>)}
-                            </select>
+                            />
                           );
-                        }
-
-                        const meta = getLabMeta(t.test);
-                        let ph = "Result value...";
-                        if (meta) {
-                          if (meta.text) ph = "e.g. Normal, Negative";
-                          else if (meta.low !== null && meta.high !== null) ph = `Normal: ${meta.low}–${meta.high}`;
-                          else if (meta.low !== null) ph = `Normal: >${meta.low}`;
-                          else if (meta.high !== null) ph = `Normal: <${meta.high}`;
-                        }
-                        return (
-                          <input
-                            type="text"
-                            placeholder={ph}
-                            value={t.value}
-                            onChange={(e) => handleTestChange(idx, e.target.value)}
-                            className="flex-1 w-full px-3 py-1.5 text-sm border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white"
-                          />
-                        );
-                      })()}
-                      {t.unit && <span className="text-xs font-mono text-stone-500 shrink-0 w-8">{t.unit}</span>}
+                        })()}
+                        {t.unit && <span className="text-xs font-mono text-stone-500 shrink-0 w-12">{t.unit}</span>}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-stone-100">
+          <div className="flex justify-end gap-2 pt-2 border-t border-stone-100 mt-6">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
             <Button disabled={!form.findings.trim()} onClick={handleSubmit}>Save Visit</Button>
           </div>

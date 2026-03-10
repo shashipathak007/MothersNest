@@ -162,38 +162,68 @@ export default function VisitCard({ visit, isLatest = false, onEdit }) {
             )}
 
             {/* GBV Screening */}
-            {visit.gbvScreening && (
+            {(visit.gbvScreening || visit.gbvRisk) && (
               <div>
                 <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">GBV Screening</p>
-                <p className="text-sm text-stone-700 leading-relaxed">{visit.gbvScreening}</p>
+                {visit.gbvRisk && (
+                  <div className="mb-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2">
+                    <span className="text-rose-500 text-lg animate-pulse">⚠</span>
+                    <div>
+                      <p className="text-xs font-bold text-rose-800 uppercase tracking-tight">High Risk: Gender Based Violence Disclosed</p>
+                      <p className="text-[10px] text-rose-600 font-medium leading-tight">Patient requires immediate safety monitoring and sensitive follow-up.</p>
+                    </div>
+                  </div>
+                )}
+                {visit.gbvScreening && (
+                  <p className="text-sm text-stone-700 leading-relaxed">{visit.gbvScreening}</p>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* Investigations/Tests */}
-        {visit.tests?.length > 0 && visit.tests.some(t => t.value.trim() !== "") && (
-          <div className="mt-3 pt-3 border-t border-stone-100">
-            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Investigations</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {visit.tests.filter(t => t.value.trim() !== "").map(t => (
-                <div key={t.test} className={`flex items-center justify-between px-3 py-1.5 rounded-lg border ${t.status === "abnormal" ? "bg-rose-50 border-rose-200" :
-                  t.status === "normal" ? "bg-emerald-50 border-emerald-200" :
-                    "bg-stone-50 border-stone-200"
-                  }`}>
-                  <span className={`text-xs font-semibold ${t.status === "abnormal" ? "text-rose-800" :
-                    t.status === "normal" ? "text-emerald-800" :
-                      "text-stone-600"
-                    }`}>{t.test}</span>
-                  <span className={`text-xs font-mono font-bold ${t.status === "abnormal" ? "text-rose-700" :
-                    t.status === "normal" ? "text-emerald-700" :
-                      "text-stone-700"
-                    }`}>
-                    {t.value} {t.unit}
-                  </span>
+            {/* Investigations/Tests */}
+            {visit.tests?.length > 0 && visit.tests.some(t => t.value && t.value.trim() !== "") && (
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Investigations / Test Results</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {visit.tests.filter(t => t.value && t.value.trim() !== "").map(t => {
+                    const bgCls = t.status === "abnormal" ? "bg-rose-50 border-rose-200" :
+                      t.status === "moderate" ? "bg-amber-50 border-amber-200" :
+                        t.status === "normal" ? "bg-emerald-50 border-emerald-200" :
+                          "bg-stone-50 border-stone-200";
+                    const textCls = t.status === "abnormal" ? "text-rose-800" :
+                      t.status === "moderate" ? "text-amber-800" :
+                        t.status === "normal" ? "text-emerald-800" :
+                          "text-stone-600";
+                    const valCls = t.status === "abnormal" ? "text-rose-700" :
+                      t.status === "moderate" ? "text-amber-700" :
+                        t.status === "normal" ? "text-emerald-700" :
+                          "text-stone-700";
+                    const riskLabel = t.status === "abnormal" ? "⚠ HIGH RISK" :
+                      t.status === "moderate" ? "⚡ MODERATE" : t.status === "normal" ? "✓ NORMAL" : "";
+                    return (
+                      <div key={t.test} className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${bgCls}`}>
+                        <div className="flex flex-col">
+                          <span className={`text-xs font-bold ${textCls}`}>{t.test}</span>
+                          {riskLabel && (
+                            <span className={`text-[9px] font-bold mt-0.5 ${valCls}`}>{riskLabel}</span>
+                          )}
+                        </div>
+                        <span className={`text-sm font-mono font-bold ${valCls}`}>
+                          {t.value} {t.unit}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {/* No detailed info message */}
+            {!visit.presentingComplaints && !visit.examNotes && !visit.gbvScreening &&
+              (!visit.tests || visit.tests.length === 0 || !visit.tests.some(t => t.value && t.value.trim() !== "")) &&
+              (!visit.reviewOfSystems || Object.values(visit.reviewOfSystems).every(v => !v)) && (
+                <p className="text-xs text-stone-400 italic">No additional details recorded for this visit. Click Edit to add details.</p>
+              )}
           </div>
         )}
 

@@ -79,6 +79,83 @@ export function autoRiskFromObHistory(flags = {}) {
   return "low";
 }
 
+/* ── Previous pregnancy dropdown options with risk levels ──────── */
+export const PREV_PREG_OPTIONS = {
+  outcome: [
+    { label: "Live Birth", risk: "low" },
+    { label: "Abortion (1–2)", risk: "moderate" },
+    { label: "Recurrent abortion (3+)", risk: "high" },
+    { label: "Stillbirth", risk: "high" },
+    { label: "Neonatal Death", risk: "high" },
+  ],
+  modeOfDelivery: [
+    { label: "SVD (Normal)", risk: "low" },
+    { label: "Forceps / Vacuum", risk: "moderate" },
+    { label: "LSCS (1st time)", risk: "moderate" },
+    { label: "LSCS (2nd or more)", risk: "high" },
+  ],
+  complications: [
+    { label: "None", risk: "low" },
+    { label: "GDM (diet controlled)", risk: "moderate" },
+    { label: "Anaemia", risk: "moderate" },
+    { label: "Pre-eclampsia (mild)", risk: "moderate" },
+    { label: "PPH (no transfusion)", risk: "moderate" },
+    { label: "GDM (insulin)", risk: "high" },
+    { label: "Severe PPH (transfusion)", risk: "high" },
+    { label: "Eclampsia", risk: "high" },
+    { label: "Sepsis", risk: "high" },
+    { label: "Uterine rupture", risk: "high" },
+  ],
+  gaAtDelivery: [
+    { label: "37–42 weeks (Term)", risk: "low" },
+    { label: "34–37 weeks", risk: "moderate" },
+    { label: "Less than 34 weeks", risk: "high" },
+  ],
+  birthWeight: [
+    { label: "2.5 kg and above", risk: "low" },
+    { label: "1.5–2.5 kg", risk: "moderate" },
+    { label: "Less than 1.5 kg", risk: "high" },
+  ],
+  babyComplications: [
+    { label: "None", risk: "low" },
+    { label: "Jaundice", risk: "moderate" },
+    { label: "NICU admission", risk: "moderate" },
+    { label: "Birth asphyxia", risk: "high" },
+    { label: "Congenital anomaly", risk: "high" },
+    { label: "Respiratory distress", risk: "high" },
+  ],
+  congenitalAnomalies: [
+    { label: "None", risk: "low" },
+    { label: "Present", risk: "high" },
+  ],
+  interventions: [
+    { label: "None", risk: "low" },
+    { label: "Episiotomy / ARM / Oxytocin", risk: "moderate" },
+    { label: "Blood transfusion", risk: "high" },
+  ],
+  anaesthesia: [
+    { label: "None / Local", risk: "low" },
+    { label: "Epidural / Spinal", risk: "moderate" },
+    { label: "General Anaesthesia", risk: "high" },
+  ],
+  interpregnancyInterval: [
+    { label: "18 months or more", risk: "low" },
+    { label: "12–18 months", risk: "moderate" },
+    { label: "Less than 12 months", risk: "high" },
+  ],
+  ancAttended: [
+    { label: "Yes", risk: "low" },
+    { label: "No", risk: "moderate" },
+  ],
+};
+
+export function getPrevPregRisk(field, value) {
+  const options = PREV_PREG_OPTIONS[field];
+  if (!options || !value) return null;
+  const match = options.find(o => o.label === value);
+  return match ? match.risk : null;
+}
+
 export function autoRisk(tags = [], obFlags = {}) {
   const fromOb = autoRiskFromObHistory(obFlags);
   if (fromOb === "high") return "high";
@@ -150,6 +227,9 @@ export function computeOverallRisk(patient) {
     // MODERATE RISK — Chronic but Controlled Diseases
     if (med.asthma) promote("moderate");
     if (med.thyroid) promote("moderate");
+
+    // GBV / Domestic Violence — HIGH RISK
+    if (fv.socialHistory?.domesticViolence) promote("high");
   } else {
     // No first visit yet — fallback to tags + basicMedical from registration
     const tagsRisk = autoRisk(patient.tags || [], patient.basicMedical || {});
@@ -178,6 +258,8 @@ export function computeOverallRisk(patient) {
       } else if (v.oedema === "Mild (+)") {
         promote("moderate");
       }
+
+      if (v.gbvRisk) promote("high");
 
       const text = `${v.findings || ""} ${v.plan || ""} ${v.examNotes || ""}`.toLowerCase();
 
@@ -210,8 +292,9 @@ export function computeOverallRisk(patient) {
         const testName = l.test;
 
         // High Risk Tests — infectious / metabolic
-        if (["HIV (1 & 2)", "HBsAg", "VDRL/RPR (Syphilis)", "HCV", "HPV Test",
-          "Fasting Blood Sugar", "Blood Glucose (RBS)", "OGTT 75g (Fasting)", "OGTT 75g (1 hr)", "OGTT 75g (2 hr)"
+        if (["HIV (1 & 2)", "HIV Status", "HBsAg", "Hepatitis B (HBsAg)", "VDRL/RPR (Syphilis)", "HCV", "HPV Test",
+          "Fasting Blood Sugar", "Blood Glucose (RBS)", "OGTT 75g (Fasting)", "OGTT 75g (1 hr)", "OGTT 75g (2 hr)",
+          "Rhesus Factor", "Urine — Leucocytes",
         ].includes(testName)) {
           promote("high");
         }
@@ -220,7 +303,7 @@ export function computeOverallRisk(patient) {
         if (testName === "Haemoglobin") {
           const hb = parseFloat(l.value);
           if (!isNaN(hb)) {
-            if (hb < 7.0) promote("high");
+            if (hb < 8.0) promote("high");
             else if (hb < 11.0) promote("moderate");
           } else {
             promote("moderate");
@@ -228,6 +311,11 @@ export function computeOverallRisk(patient) {
         }
 
         // Any other abnormal lab → at least moderate
+        promote("moderate");
+      }
+
+      // Handle moderate lab status
+      if (l.status === "moderate") {
         promote("moderate");
       }
     }
@@ -316,6 +404,9 @@ export function getPatientConditions(patient) {
     if (ros.pvBleeding) add("PV Bleeding", "high");
     if (ros.fetalMovements) add("Reduced Fetal Movement", "high");
     if (ros.contractions) add("Preterm Contractions", "high");
+
+    // Social / GBV
+    if (fv.socialHistory?.domesticViolence) add("GBV Risk", "high");
   }
 
   // Support for generic obstetricFlags if firstVisit not used
@@ -324,6 +415,11 @@ export function getPatientConditions(patient) {
       if (patient.obstetricFlags[f.key]) add(f.label.replace("Previous ", "Prev "), f.risk);
     });
   }
+
+  // 4. Visit risks
+  (patient.visits || []).forEach(v => {
+    if (v.gbvRisk) add("GBV Risk", "high");
+  });
 
   // Sort by risk: high -> moderate -> low
   const riskOrder = { high: 0, moderate: 1, low: 2 };
@@ -334,8 +430,9 @@ export function getPatientConditions(patient) {
 
 export const STATUS_PILL = {
   normal: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+  moderate: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
   abnormal: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
-  pending: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+  pending: "bg-stone-50 text-stone-500 ring-1 ring-stone-200",
 };
 
 /* ─── Dropdown options ───────────────────────────────────────────── */
@@ -377,8 +474,10 @@ export const CONTRACEPTIVE_METHODS = [
 ];
 
 export const DELIVERY_TYPES = [
+  { label: "SVD (Spontaneous Vaginal Delivery)", risk: "low" },
   { label: "Normal Vaginal Delivery (SVD)", risk: "low" },
   { label: "Cesarean Section (LSCS)", risk: "moderate" },
+  { label: "LSCS (Emergency)", risk: "high" },
   { label: "Forceps Delivery", risk: "moderate" },
   { label: "Vacuum Delivery", risk: "moderate" },
   { label: "Assisted Breech Delivery", risk: "high" },
@@ -439,11 +538,11 @@ export function getCurrentANCContact(lmp) {
 /* ─── Suggested tests per ANC contact ────────────────────────────── */
 export const ANC_VISIT_TESTS = {
   1: [
-    "Haemoglobin", "Blood Group & Rh",
-    "HIV (1 & 2)", "VDRL/RPR (Syphilis)", "HBsAg", "HPV Test",
+    "Haemoglobin", "Blood Group", "Rhesus Factor",
+    "HIV Status", "VDRL/RPR (Syphilis)", "Hepatitis B (HBsAg)", "HPV Test",
     "Blood Glucose (RBS)",
-    "Urine Protein", "Urine Sugar",
-    "Ultrasound (Dating)",
+    "Urine — Protein", "Urine — Glucose", "Urine — Leucocytes",
+    "Early U/S (<24wks)",
   ],
   2: [
     "Haemoglobin", "Urine Protein", "Urine Sugar",
@@ -521,6 +620,8 @@ export function autoRiskFromFirstVisit(firstVisit = {}) {
 export const LAB_TESTS = [
   // Haematology
   { name: "Haemoglobin", unit: "g/dL", category: "Haematology", low: 11.0, high: 15.0 },
+  { name: "Blood Group", unit: "", category: "Haematology", text: true },
+  { name: "Rhesus Factor", unit: "", category: "Haematology", text: true },
   { name: "Blood Group & Rh", unit: "", category: "Haematology", text: true },
   { name: "Packed Cell Volume (PCV)", unit: "%", category: "Haematology", low: 33, high: 44 },
   { name: "Platelet Count", unit: "×10³/µL", category: "Haematology", low: 150, high: 400 },
@@ -529,7 +630,7 @@ export const LAB_TESTS = [
   // Blood Sugar
   { name: "Fasting Blood Sugar", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 99 },
   { name: "Post-prandial Sugar", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 139 },
-  { name: "Blood Glucose (RBS)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 140 },
+  { name: "Blood Glucose (RBS)", unit: "mmol/L", category: "Blood Sugar", low: 3.9, high: 6.9 },
   { name: "OGTT 75g (Fasting)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 92 },
   { name: "OGTT 75g (1 hr)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 180 },
   { name: "OGTT 75g (2 hr)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 153 },
@@ -538,6 +639,9 @@ export const LAB_TESTS = [
   // Urine (text based)
   { name: "Urine Protein", unit: "", category: "Urine", text: true },
   { name: "Urine Sugar", unit: "", category: "Urine", text: true },
+  { name: "Urine — Protein", unit: "", category: "Urine", text: true },
+  { name: "Urine — Glucose", unit: "", category: "Urine", text: true },
+  { name: "Urine — Leucocytes", unit: "", category: "Urine", text: true },
   { name: "Urine R/M/E", unit: "", category: "Urine", text: true },
 
   // Renal
@@ -551,12 +655,15 @@ export const LAB_TESTS = [
 
   // Infectious (text based)
   { name: "HIV (1 & 2)", unit: "", category: "Infectious", text: true },
+  { name: "HIV Status", unit: "", category: "Infectious", text: true },
   { name: "HBsAg", unit: "", category: "Infectious", text: true },
+  { name: "Hepatitis B (HBsAg)", unit: "", category: "Infectious", text: true },
   { name: "VDRL/RPR (Syphilis)", unit: "", category: "Infectious", text: true },
   { name: "HCV", unit: "", category: "Infectious", text: true },
   { name: "HPV Test", unit: "", category: "Infectious", text: true },
 
   // Imaging
+  { name: "Early U/S (<24wks)", unit: "", category: "Imaging", text: true },
   { name: "Ultrasound (Dating)", unit: "", category: "Imaging", text: true },
   { name: "Anomaly Scan", unit: "", category: "Imaging", text: true },
   { name: "Growth Scan", unit: "", category: "Imaging", text: true },
@@ -579,74 +686,165 @@ export function getLabUnit(name) {
 }
 
 export function getLabOptions(name) {
-  if (name === "Urine Protein") return [
-    "Negative (0 mg/dL)",
-    "Trace (10–20 mg/dL)",
-    "+ (~30 mg/dL)",
-    "++ (~100 mg/dL)",
-    "+++ (~300 mg/dL)",
-    "++++ (≥1000 mg/dL)"
+  // Urine — Protein (Nil / Trace / +1 / +2 / +3)
+  if (name === "Urine Protein" || name === "Urine — Protein") return [
+    "Nil", "Trace", "+1", "+2", "+3",
   ];
-  if (name === "Urine Sugar") return [
-    "Negative (0 mg/dL)",
-    "Trace (~100 mg/dL)",
-    "+ (~250 mg/dL)",
-    "++ (~500 mg/dL)",
-    "+++ (~1000 mg/dL)"
+  // Urine — Glucose (Nil / Trace / + / ++)
+  if (name === "Urine Sugar" || name === "Urine — Glucose") return [
+    "Nil", "Trace", "+", "++",
   ];
+  // Urine — Leucocytes (Neg / Pos)
+  if (name === "Urine — Leucocytes") return ["Negative", "Positive"];
+
+  // Blood Group — A/B/AB/O
+  if (name === "Blood Group") return ["A", "B", "AB", "O"];
   if (name === "Blood Group & Rh") return BLOOD_GROUPS;
-  if (["HIV (1 & 2)", "HBsAg", "VDRL/RPR (Syphilis)", "HCV", "HPV Test"].includes(name)) return ["Negative", "Positive"];
+
+  // Rhesus Factor — Pos/Neg
+  if (name === "Rhesus Factor") return ["Rh+", "Rh−"];
+
+  // HIV Status — Neg/Pos/Unknown
+  if (name === "HIV Status" || name === "HIV (1 & 2)") return ["Negative", "Positive", "Unknown"];
+
+  // VDRL/RPR — Reactive/Non-Reactive
+  if (name === "VDRL/RPR (Syphilis)") return ["Non-Reactive", "Reactive"];
+
+  // Hepatitis B — Pos/Neg
+  if (name === "Hepatitis B (HBsAg)" || name === "HBsAg") return ["Negative", "Positive"];
+
+  // HPV Test — Pos/Neg/Not done
+  if (name === "HPV Test") return ["Negative", "Positive", "Not done"];
+
+  // HCV
+  if (name === "HCV") return ["Negative", "Positive"];
+
+  // Early U/S (<24wks)
+  if (name === "Early U/S (<24wks)") return ["Normal singleton", "Anomaly", "Multiple", "Not yet done"];
   if (["Ultrasound (Dating)", "Anomaly Scan", "Growth Scan", "Doppler Study"].includes(name)) return ["Normal", "Abnormal Findings"];
+
   return null;
 }
 
+/**
+ * Returns three-tier risk status: "normal" | "moderate" | "abnormal" | "pending"
+ * Per the ANC Visit 1 specification:
+ *   normal   = green (no concern)
+ *   moderate = amber (needs monitoring)
+ *   abnormal = red   (high risk, needs action)
+ */
 export function autoLabStatus(name, value) {
   const meta = getLabMeta(name);
 
   // No value entered
-  if (value === undefined || value === null || value === "") {
-    return "pending";
-  }
-
+  if (value === undefined || value === null || value === "") return "pending";
   if (!meta) return "pending";
 
-  // TEXT BASED TESTS
-  if (meta.text) {
-    const v = String(value).toLowerCase().trim();
+  const v = String(value).toLowerCase().trim();
 
-    if (
-      v.includes("positive") ||
-      v.includes("reactive") ||
-      v.includes("detected") ||
-      v.includes("+") ||
-      v.includes("trace") ||
-      v.includes("abnormal")
-    ) {
-      if (name === "Urine Protein" && v.includes("trace")) {
-        return "normal"; // Trace is usually normal for Urine Protein
-      }
-      return "abnormal";
-    }
+  // ─── Per-test CUSTOM three-tier rules ──────────────────────────
 
-    if (v.includes("negative") || v.includes("normal") || v.includes("non-reactive") || v === "none") {
-      return "normal";
-    }
-
+  // Haemoglobin: Normal ≥11.0, Moderate 8.0–10.9, High Risk <8.0
+  if (name === "Haemoglobin") {
+    const num = parseFloat(value);
+    if (isNaN(num)) return "pending";
+    if (num < 8.0) return "abnormal";
+    if (num < 11.0) return "moderate";
     return "normal";
   }
 
-  // NUMERIC TESTS
+  // Blood Group: Always Normal
+  if (name === "Blood Group" || name === "Blood Group & Rh") return "normal";
+
+  // Rhesus Factor: Normal Rh+, High Risk Rh−
+  if (name === "Rhesus Factor") {
+    if (v.includes("rh−") || v.includes("rh-") || v === "negative" || v === "neg") return "abnormal";
+    return "normal";
+  }
+
+  // HIV Status: Normal Negative, Moderate Unknown, High Risk Positive
+  if (name === "HIV Status" || name === "HIV (1 & 2)") {
+    if (v === "positive" || v.includes("positive")) return "abnormal";
+    if (v === "unknown") return "moderate";
+    return "normal";
+  }
+
+  // VDRL/RPR: Normal Non-Reactive, High Risk Reactive
+  if (name === "VDRL/RPR (Syphilis)") {
+    if (v === "reactive" || v.includes("reactive") && !v.includes("non")) return "abnormal";
+    return "normal";
+  }
+
+  // Hepatitis B: Normal Negative, High Risk Positive
+  if (name === "Hepatitis B (HBsAg)" || name === "HBsAg") {
+    if (v === "positive" || v.includes("positive")) return "abnormal";
+    return "normal";
+  }
+
+  // HPV Test: Normal Negative, Moderate Not done, High Risk Positive
+  if (name === "HPV Test") {
+    if (v === "positive" || v.includes("positive")) return "abnormal";
+    if (v === "not done" || v.includes("not done")) return "moderate";
+    return "normal";
+  }
+
+  // Blood Glucose (RBS) mmol/L: Normal 3.9–6.9, Moderate 7.0–7.7, High Risk ≥7.8
+  if (name === "Blood Glucose (RBS)") {
+    const num = parseFloat(value);
+    if (isNaN(num)) return "pending";
+    if (num >= 7.8) return "abnormal";
+    if (num >= 7.0) return "moderate";
+    if (num < 3.9) return "abnormal";
+    return "normal";
+  }
+
+  // Urine — Protein: Normal Nil, Moderate Trace/+1, High Risk +2/+3
+  if (name === "Urine — Protein" || name === "Urine Protein") {
+    if (v === "nil" || v === "negative") return "normal";
+    if (v === "trace" || v === "+1") return "moderate";
+    if (v === "+2" || v === "+3" || v.includes("+++") || v.includes("++")) return "abnormal";
+    return "normal";
+  }
+
+  // Urine — Glucose: Normal Nil, Moderate Trace, High Risk + or ++
+  if (name === "Urine — Glucose" || name === "Urine Sugar") {
+    if (v === "nil" || v === "negative") return "normal";
+    if (v === "trace") return "moderate";
+    if (v === "+" || v === "++" || v.includes("+")) return "abnormal";
+    return "normal";
+  }
+
+  // Urine — Leucocytes: Normal Negative, High Risk Positive
+  if (name === "Urine — Leucocytes") {
+    if (v === "positive" || v.includes("positive")) return "abnormal";
+    return "normal";
+  }
+
+  // Early U/S (<24wks): Normal singleton, Moderate Not yet done, High Risk Anomaly/Multiple
+  if (name === "Early U/S (<24wks)") {
+    if (v.includes("anomaly") || v.includes("multiple") || v.includes("abnormal")) return "abnormal";
+    if (v.includes("not yet done") || v.includes("not done")) return "moderate";
+    return "normal";
+  }
+
+  // HCV
+  if (name === "HCV") {
+    if (v === "positive" || v.includes("positive")) return "abnormal";
+    return "normal";
+  }
+
+  // ─── Generic TEXT tests fallback ──────────────────────────────
+  if (meta.text) {
+    if (v.includes("positive") || v.includes("reactive") || v.includes("detected") || v.includes("abnormal")) return "abnormal";
+    if (v.includes("negative") || v.includes("normal") || v.includes("non-reactive") || v === "none" || v === "nil") return "normal";
+    return "normal";
+  }
+
+  // ─── Generic NUMERIC tests fallback ───────────────────────────
   const num = parseFloat(value);
   if (isNaN(num)) return "pending";
-
-  if (meta.low !== null && num < meta.low) {
-    return "abnormal";
-  }
-
-  if (meta.high !== null && num > meta.high) {
-    return "abnormal";
-  }
-
+  if (meta.low !== null && num < meta.low) return "abnormal";
+  if (meta.high !== null && num > meta.high) return "abnormal";
   return "normal";
 }
 
