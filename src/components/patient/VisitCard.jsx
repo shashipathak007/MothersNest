@@ -1,7 +1,9 @@
+import { useState } from "react";
 import Card from "../ui/Card.jsx";
 import { VISIT_BADGE, fmtDate } from "../../utils/helpers.js";
 
 export default function VisitCard({ visit, isLatest = false, onEdit }) {
+  const [expanded, setExpanded] = useState(false);
   const typeCls = VISIT_BADGE[visit.type] ?? "bg-stone-100 text-stone-600";
 
   const bpCls =
@@ -27,8 +29,8 @@ export default function VisitCard({ visit, isLatest = false, onEdit }) {
         }`} />
 
       <Card
-        onClick={onEdit ? onEdit : undefined}
-        className={`p-4 ${onEdit ? "cursor-pointer hover:border-brand-300 hover:shadow-md" : ""} transition-all ${isLatest ? "border-brand-200" : ""}`}
+        onClick={() => setExpanded(e => !e)}
+        className={`p-4 cursor-pointer hover:border-brand-300 hover:shadow-md transition-all ${isLatest ? "border-brand-200" : ""}`}
       >
         {/* Header */}
         <div className="flex items-center flex-wrap gap-2 mb-3">
@@ -42,10 +44,15 @@ export default function VisitCard({ visit, isLatest = false, onEdit }) {
             {visit.type}
           </span>
 
+          {/* Expand/collapse indicator */}
+          <span className={`ml-auto text-stone-400 text-xs transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}>
+            ▾
+          </span>
+
           {onEdit && (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
-              className="ml-auto p-1.5 text-stone-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+              className="p-1.5 text-stone-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
               title="Edit Visit"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,6 +124,53 @@ export default function VisitCard({ visit, isLatest = false, onEdit }) {
           </p>
         )}
 
+        {/* ── Expanded Details ────────────────────────────────── */}
+        {expanded && (
+          <div className="mt-3 pt-3 border-t border-stone-100 space-y-4 animate-fadeIn">
+
+            {/* Presenting Complaints */}
+            {visit.presentingComplaints && (
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Presenting Complaints</p>
+                <p className="text-sm text-stone-700 leading-relaxed">{visit.presentingComplaints}</p>
+              </div>
+            )}
+
+            {/* Review of Systems */}
+            {visit.reviewOfSystems && (
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">Review of Systems</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(visit.reviewOfSystems).filter(([_, v]) => v).map(([key]) => (
+                    <span key={key} className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-100 text-rose-700">
+                      ⚠ {key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}
+                    </span>
+                  ))}
+                  {Object.values(visit.reviewOfSystems).every(v => !v) && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700">✓ All clear</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Exam Notes */}
+            {visit.examNotes && (
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">Examination Notes</p>
+                <p className="text-sm text-stone-700 leading-relaxed">{visit.examNotes}</p>
+              </div>
+            )}
+
+            {/* GBV Screening */}
+            {visit.gbvScreening && (
+              <div>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">GBV Screening</p>
+                <p className="text-sm text-stone-700 leading-relaxed">{visit.gbvScreening}</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Investigations/Tests */}
         {visit.tests?.length > 0 && visit.tests.some(t => t.value.trim() !== "") && (
           <div className="mt-3 pt-3 border-t border-stone-100">
@@ -161,5 +215,3 @@ export default function VisitCard({ visit, isLatest = false, onEdit }) {
     </div>
   );
 }
-
-

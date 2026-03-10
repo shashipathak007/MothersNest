@@ -16,7 +16,7 @@ const EMPTY_FORM = {
     birthWeight: "",
     apgar1: "",
     apgar5: "",
-    babyStatus: "Stable",
+    babyStatus: "Healthy & Stable",
     breastfeedingInitiated: "Yes",
     dischargeDate: "",
     followUpDate: "",
@@ -24,6 +24,49 @@ const EMPTY_FORM = {
     signsExplained: "Yes",
     immunization: { bcg: false, opv: false, hepB: false }
 };
+
+/* ── Risk badge for delivery mode ─────────────────────────────────── */
+function DeliveryRiskBadge({ deliveryMode }) {
+    const dt = DELIVERY_TYPES.find(t => t.label === deliveryMode);
+    if (!dt) return null;
+    const config = {
+        high: { bg: "bg-rose-600", border: "border-rose-700", text: "text-white", icon: "🔴", label: "HIGH RISK", desc: "Requires close monitoring and specialist care" },
+        moderate: { bg: "bg-amber-500", border: "border-amber-600", text: "text-white", icon: "🟠", label: "MODERATE RISK", desc: "Monitor for complications" },
+        low: { bg: "bg-emerald-500", border: "border-emerald-600", text: "text-white", icon: "🟢", label: "LOW RISK", desc: "Normal delivery pathway" },
+    };
+    const c = config[dt.risk];
+    return (
+        <div className={`${c.bg} ${c.text} rounded-2xl px-5 py-3.5 border-2 ${c.border} sm:col-span-2 flex items-center gap-4`}>
+            <span className="text-2xl">{c.icon}</span>
+            <div className="flex-1">
+                <p className="text-sm font-bold uppercase tracking-wider">{c.label} — Delivery Mode</p>
+                <p className="text-xs opacity-90 mt-0.5">{dt.label}</p>
+                <p className="text-[10px] opacity-75 mt-0.5">{c.desc}</p>
+            </div>
+        </div>
+    );
+}
+
+/* ── Complication flag ─────────────────────────────────────────────── */
+function ComplicationFlag({ value, type }) {
+    if (!value || value === "None" || value === "Healthy & Stable") return null;
+
+    const isHigh = ["PPH (Postpartum Hemorrhage)", "Eclampsia", "Sepsis", "Retained Placenta", "Perineal Tear (3rd/4th Degree)"].includes(value)
+        || ["Stillbirth", "Neonatal Death", "NICU admitted", "Referred", "Congenital Anomaly"].includes(value);
+
+    const bg = isHigh ? "bg-rose-600" : "bg-amber-500";
+    const icon = isHigh ? "⚠" : "⚡";
+
+    return (
+        <div className={`${bg} text-white rounded-xl px-4 py-2.5 flex items-center gap-3 sm:col-span-2`}>
+            <span className="text-lg">{icon}</span>
+            <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider opacity-90">{type}</p>
+                <p className="text-sm font-bold">{value}</p>
+            </div>
+        </div>
+    );
+}
 
 export default function RecordDeliveryModal({ open, onClose, onSave, patient }) {
     const [form, setForm] = useState(EMPTY_FORM);
@@ -68,20 +111,11 @@ export default function RecordDeliveryModal({ open, onClose, onSave, patient }) 
                                 </option>
                             ))}
                         </FormSelect>
-                        {form.deliveryMode && (() => {
-                            const dt = DELIVERY_TYPES.find(t => t.label === form.deliveryMode);
-                            if (!dt) return null;
-                            const cls = dt.risk === 'high' ? 'bg-rose-100 text-rose-700 ring-rose-200' :
-                                dt.risk === 'moderate' ? 'bg-amber-100 text-amber-700 ring-amber-200' :
-                                    'bg-emerald-100 text-emerald-700 ring-emerald-200';
-                            const icon = dt.risk === 'high' ? '⚠' : dt.risk === 'moderate' ? '⚡' : '✓';
-                            return (
-                                <div className={`px-3.5 py-2 text-xs rounded-xl font-bold uppercase tracking-wider ring-1 ${cls}`}>
-                                    {icon} {dt.risk} Risk
-                                </div>
-                            );
-                        })()}
                         <FormInput label="Duration of Labor (hours)" type="text" placeholder="e.g. 8" value={form.durationOfLabor} onChange={(e) => set("durationOfLabor", e.target.value)} />
+
+                        {/* BIG risk indicator for delivery mode */}
+                        {form.deliveryMode && <DeliveryRiskBadge deliveryMode={form.deliveryMode} />}
+
                         <FormSelect
                             label="Maternal Complications"
                             value={form.maternalComplications}
@@ -97,6 +131,10 @@ export default function RecordDeliveryModal({ open, onClose, onSave, patient }) 
                             ]}
                             className="sm:col-span-2"
                         />
+
+                        {/* Maternal complication flag */}
+                        <ComplicationFlag value={form.maternalComplications} type="Maternal Complication" />
+
                         <FormSelect
                             label="Episiotomy Performed?"
                             value={form.episiotomy}
@@ -124,6 +162,9 @@ export default function RecordDeliveryModal({ open, onClose, onSave, patient }) 
                             onChange={(e) => set("breastfeedingInitiated", e.target.value)}
                             options={["Yes", "No"]}
                         />
+
+                        {/* Baby status flag */}
+                        <ComplicationFlag value={form.babyStatus} type="Baby Status" />
                     </div>
                 </div>
 

@@ -210,8 +210,8 @@ export function computeOverallRisk(patient) {
         const testName = l.test;
 
         // High Risk Tests — infectious / metabolic
-        if (["HIV (1 & 2)", "HBsAg", "VDRL/RPR (Syphilis)", "HCV",
-          "Fasting Blood Sugar", "OGTT 75g (Fasting)", "OGTT 75g (1 hr)", "OGTT 75g (2 hr)"
+        if (["HIV (1 & 2)", "HBsAg", "VDRL/RPR (Syphilis)", "HCV", "HPV Test",
+          "Fasting Blood Sugar", "Blood Glucose (RBS)", "OGTT 75g (Fasting)", "OGTT 75g (1 hr)", "OGTT 75g (2 hr)"
         ].includes(testName)) {
           promote("high");
         }
@@ -439,9 +439,11 @@ export function getCurrentANCContact(lmp) {
 /* ─── Suggested tests per ANC contact ────────────────────────────── */
 export const ANC_VISIT_TESTS = {
   1: [
-    "Haemoglobin", "Blood Group & Rh", "Urine Protein", "Urine Sugar",
-    "HIV (1 & 2)", "HBsAg", "VDRL/RPR (Syphilis)", "TSH",
-    "Fasting Blood Sugar", "Ultrasound (Dating)",
+    "Haemoglobin", "Blood Group & Rh",
+    "HIV (1 & 2)", "VDRL/RPR (Syphilis)", "HBsAg", "HPV Test",
+    "Blood Glucose (RBS)",
+    "Urine Protein", "Urine Sugar",
+    "Ultrasound (Dating)",
   ],
   2: [
     "Haemoglobin", "Urine Protein", "Urine Sugar",
@@ -527,6 +529,7 @@ export const LAB_TESTS = [
   // Blood Sugar
   { name: "Fasting Blood Sugar", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 99 },
   { name: "Post-prandial Sugar", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 139 },
+  { name: "Blood Glucose (RBS)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 140 },
   { name: "OGTT 75g (Fasting)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 92 },
   { name: "OGTT 75g (1 hr)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 180 },
   { name: "OGTT 75g (2 hr)", unit: "mg/dL", category: "Blood Sugar", low: 70, high: 153 },
@@ -551,6 +554,7 @@ export const LAB_TESTS = [
   { name: "HBsAg", unit: "", category: "Infectious", text: true },
   { name: "VDRL/RPR (Syphilis)", unit: "", category: "Infectious", text: true },
   { name: "HCV", unit: "", category: "Infectious", text: true },
+  { name: "HPV Test", unit: "", category: "Infectious", text: true },
 
   // Imaging
   { name: "Ultrasound (Dating)", unit: "", category: "Imaging", text: true },
@@ -590,7 +594,8 @@ export function getLabOptions(name) {
     "++ (~500 mg/dL)",
     "+++ (~1000 mg/dL)"
   ];
-  if (["HIV (1 & 2)", "HBsAg", "VDRL/RPR (Syphilis)", "HCV"].includes(name)) return ["Negative", "Positive"];
+  if (name === "Blood Group & Rh") return BLOOD_GROUPS;
+  if (["HIV (1 & 2)", "HBsAg", "VDRL/RPR (Syphilis)", "HCV", "HPV Test"].includes(name)) return ["Negative", "Positive"];
   if (["Ultrasound (Dating)", "Anomaly Scan", "Growth Scan", "Doppler Study"].includes(name)) return ["Normal", "Abnormal Findings"];
   return null;
 }

@@ -667,16 +667,6 @@ function FirstVisitForm({ patient, onSaved }) {
                                         <FormInput label="Cause of Early NND (if known)" value={preg.nndCause} onChange={e => setPregField("nndCause", e.target.value)} placeholder="Prematurity, Birth asphyxia, Sepsis..." />
                                     </div>
                                 )}
-
-                                {/* Complications Checkboxes */}
-                                <div className="mt-3 pt-3 border-t border-stone-200">
-                                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">Complications Recorded</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                        {OB_FLAGS.map(([key, label]) => (
-                                            <BoolToggle key={key} label={label} value={preg[key]} onChange={v => setPregField(key, v)} />
-                                        ))}
-                                    </div>
-                                </div>
                             </div>
                         );
                     })}

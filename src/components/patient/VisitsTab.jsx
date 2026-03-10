@@ -66,9 +66,25 @@ export default function VisitsTab({ patient, visits, onAdd, missedContacts = [] 
         <div className="relative">
           <div className="absolute left-5.25 top-6 bottom-6 w-px bg-stone-200" />
           <div className="space-y-3">
-            {visits.map((v, i) => <VisitCard key={v.id} visit={v} isLatest={i === 0} />)}
+            {visits.map((v, i) => (
+              <VisitCard
+                key={v.id}
+                visit={v}
+                isLatest={i === 0}
+                onEdit={() => setEditingVisit(v)}
+              />
+            ))}
           </div>
         </div>
+      )}
+
+      {/* Edit Visit Modal */}
+      {editingVisit && (
+        <AddVisitModal
+          patient={patient}
+          initialVisit={editingVisit}
+          onClose={() => setEditingVisit(null)}
+        />
       )}
     </div>
   );

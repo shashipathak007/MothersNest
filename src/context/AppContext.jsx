@@ -684,11 +684,20 @@ function reducer(state, action) {
       const p = state.postnatalPatients.find(x => x.id === action.patientId);
       if (!p) return state;
 
+      // Map complications and delivery outcome to specific boolean flags
+      const isCS = p.deliveryMode?.includes("LSCS") || p.deliveryMode?.includes("Caesarean");
+      const isForceps = p.deliveryMode?.includes("Forceps") || p.deliveryMode?.includes("Vacuum");
+      const isPPH = p.maternalComplications?.includes("PPH") || p.maternalComplications?.includes("hemorrhage");
+      const isEclampsia = p.maternalComplications?.includes("Eclampsia") || p.maternalComplications?.includes("PIH");
+      const isStillbirth = p.babyStatus === "Stillbirth";
+      const isNND = p.babyStatus === "Neonatal Death";
+      const isAnomaly = p.babyStatus === "Congenital Anomaly";
+      const isPreterm = p.gaAtDelivery && parseInt(p.gaAtDelivery.split("+")[0]) < 37;
+
       // Build the previous pregnancy entry from the delivery that just happened
       const prevDeliveryEntry = p.deliveryDate ? {
         year: p.deliveryDate.slice(0, 4),
-        outcome: p.babyStatus === "Stillbirth" ? "Stillbirth" :
-          p.babyStatus === "Neonatal Death" ? "Neonatal Death" : "Live Birth",
+        outcome: isStillbirth ? "Stillbirth" : isNND ? "Neonatal Death" : "Live Birth",
         ancAttended: true,
         placeOfDelivery: "Hospital",
         ga: p.gaAtDelivery || "",
@@ -702,9 +711,21 @@ function reducer(state, action) {
         babyWeight: p.birthWeight ? `${p.birthWeight} kg` : "",
         apgar: p.apgar5 ? `5min: ${p.apgar5}` : "",
         timeOfBirth: p.deliveryTime || "",
-        babyComplications: "",
+        babyComplications: p.babyStatus !== "Stable" && p.babyStatus !== "Healthy & Stable" ? p.babyStatus : "",
         immunisations: p.immunization ? Object.entries(p.immunization).filter(([_, v]) => v).map(([k]) => k.toUpperCase()).join(", ") : "",
         breastfeeding: p.bfedInitiated === "Yes" ? "Exclusive (6 months)" : "",
+        // Specific boolean flags for risk evaluation
+        prevCS: !!isCS,
+        prevPPH: !!isPPH,
+        prevPreterm: !!isPreterm,
+        prevStillbirth: !!isStillbirth,
+        prevEclampsia: !!isEclampsia,
+        prevGDM: p.maternalComplications?.includes("GDM") || false,
+        prevNeonatalDeath: !!isNND,
+        prevCongenitalAnomaly: !!isAnomaly,
+        prevForceps: !!isForceps,
+        prevAbortion2Plus: false,
+        prevSevereAnaemia: p.maternalComplications?.includes("Anaemia") || false,
       } : null;
 
       // Combine: new delivery entry + any existing previousPregnancies from prior firstVisit

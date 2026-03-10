@@ -5,7 +5,7 @@ import AlertsCard from "./AlertsCard.jsx";
 import VisitCard from "./VisitCard.jsx";
 import Card from "../ui/Card.jsx";
 import SectionLabel from "../ui/SectionLabel.jsx";
-import { BASIC_MEDICAL_FLAGS, RISK_CONFIG, computeOverallRisk } from "../../utils/helpers.js";
+import { BASIC_MEDICAL_FLAGS, RISK_CONFIG, computeOverallRisk, DELIVERY_TYPES, OB_RISK_FLAGS } from "../../utils/helpers.js";
 
 /* ─── Small helper components ──────────────────────────────────────── */
 function RiskSourceBadge({ label, source }) {
@@ -95,9 +95,65 @@ function getRiskFactors(patient) {
 function PostnatalSummaryCard({ p }) {
   if (p.patientType !== "postnatal") return null;
 
+  // Delivery mode risk
+  const dt = DELIVERY_TYPES.find(t => t.label === p.deliveryMode);
+  const deliveryRisk = dt?.risk || "low";
+  const deliveryRiskConfig = {
+    high: { bg: "bg-rose-600", text: "text-white", icon: "🔴", label: "HIGH RISK" },
+    moderate: { bg: "bg-amber-500", text: "text-white", icon: "🟠", label: "MODERATE RISK" },
+    low: { bg: "bg-emerald-500", text: "text-white", icon: "🟢", label: "LOW RISK" },
+  };
+  const drc = deliveryRiskConfig[deliveryRisk];
+
+  // Maternal complication check
+  const hasMaternalComplication = p.maternalComplications && p.maternalComplications !== "None";
+  const isSevereComplication = ["PPH (Postpartum Hemorrhage)", "Eclampsia", "Sepsis", "Retained Placenta", "Postpartum hemorrhage"].some(c => p.maternalComplications?.includes(c));
+
+  // Baby status check
+  const babyIsNormal = ["Stable", "Healthy & Stable"].includes(p.babyStatus);
+  const babyIsCritical = ["Stillbirth", "Neonatal Death"].includes(p.babyStatus);
+  const babyNeedsAttention = ["NICU admitted", "Referred", "Congenital Anomaly"].includes(p.babyStatus);
+
   return (
     <Card className="p-5 border-2 border-brand-200 bg-brand-50/30">
       <SectionLabel>Postnatal & Delivery Summary</SectionLabel>
+
+      {/* ── Prominent Risk Flags ────────────────────────── */}
+      <div className="space-y-2 mb-4">
+        {/* Delivery Mode Risk Banner */}
+        {p.deliveryMode && (
+          <div className={`${drc.bg} ${drc.text} rounded-xl px-4 py-3 flex items-center gap-3`}>
+            <span className="text-xl">{drc.icon}</span>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider opacity-90">Delivery Mode</p>
+              <p className="text-sm font-bold">{p.deliveryMode}</p>
+            </div>
+            <span className="ml-auto text-xs font-bold uppercase tracking-widest opacity-80">{drc.label}</span>
+          </div>
+        )}
+
+        {/* Maternal Complication Flag */}
+        {hasMaternalComplication && (
+          <div className={`${isSevereComplication ? "bg-rose-600" : "bg-amber-500"} text-white rounded-xl px-4 py-3 flex items-center gap-3`}>
+            <span className="text-xl">{isSevereComplication ? "⚠" : "⚡"}</span>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider opacity-90">Maternal Complication</p>
+              <p className="text-sm font-bold">{p.maternalComplications}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Baby Status Flag */}
+        {!babyIsNormal && (
+          <div className={`${babyIsCritical ? "bg-rose-600" : babyNeedsAttention ? "bg-amber-500" : "bg-stone-500"} text-white rounded-xl px-4 py-3 flex items-center gap-3`}>
+            <span className="text-xl">{babyIsCritical ? "⚠" : "⚡"}</span>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider opacity-90">Baby Status</p>
+              <p className="text-sm font-bold">{p.babyStatus}</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
         <div>
@@ -114,14 +170,16 @@ function PostnatalSummaryCard({ p }) {
         </div>
         <div>
           <p className="text-[10px] text-stone-500 uppercase tracking-wider">Complications</p>
-          <p className="font-semibold text-stone-800 text-sm">{p.maternalComplications || "None"}</p>
+          <p className={`font-semibold text-sm ${hasMaternalComplication ? (isSevereComplication ? "text-rose-700" : "text-amber-700") : "text-stone-800"}`}>
+            {p.maternalComplications || "None"}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4 pt-4 border-t border-brand-100/50">
         <div>
           <p className="text-[10px] text-stone-500 uppercase tracking-wider">Baby Status</p>
-          <p className={`font-semibold text-sm ${p.babyStatus?.includes("Stillbirth") ? "text-rose-600" : p.babyStatus?.includes("NICU") || p.babyStatus?.includes("Referred") ? "text-amber-600" : "text-emerald-700"}`}>
+          <p className={`font-semibold text-sm ${babyIsCritical ? "text-rose-600" : babyNeedsAttention ? "text-amber-600" : "text-emerald-700"}`}>
             {p.babyStatus || "—"}
           </p>
         </div>
@@ -176,7 +234,37 @@ export default function InfoTab({ patient, onViewVisits }) {
 
   const activeBasicMed = BASIC_MEDICAL_FLAGS.filter(f => patient.basicMedical?.[f.key]);
 
-  const hasAnyAlert = activeBasicMed.length > 0 || abnormalLabs.length > 0 || bpAlert || fhrAlert;
+  // Extract previous pregnancy complications from per-pregnancy entries  
+  const prevPregAlerts = [];
+  const prevPregs = patient.firstVisit?.obstetricHistory?.previousPregnancies || [];
+  const OB_FLAG_LABELS = {
+    prevCS: "Caesarean Section", prevPPH: "PPH", prevPreterm: "Preterm Birth",
+    prevStillbirth: "Stillbirth", prevEclampsia: "Eclampsia/PIH",
+    prevGDM: "GDM", prevNeonatalDeath: "Neonatal Death",
+    prevCongenitalAnomaly: "Congenital Anomaly", prevForceps: "Forceps/Vacuum",
+    prevAbortion2Plus: "Abortion (≥2)", prevSevereAnaemia: "Severe Anaemia",
+  };
+  prevPregs.forEach((preg, idx) => {
+    // Check OB flags on the pregnancy entry
+    Object.entries(OB_FLAG_LABELS).forEach(([key, label]) => {
+      if (preg[key]) {
+        const riskDef = OB_RISK_FLAGS.find(f => f.key === key);
+        prevPregAlerts.push({
+          label, risk: riskDef?.risk || "moderate",
+          source: `Pregnancy #${idx + 1} (${preg.year || "—"})`,
+        });
+      }
+    });
+    // Check text complications field
+    if (preg.complications && preg.complications !== "None") {
+      prevPregAlerts.push({
+        label: preg.complications, risk: "moderate",
+        source: `Pregnancy #${idx + 1} (${preg.year || "—"})`,
+      });
+    }
+  });
+
+  const hasAnyAlert = activeBasicMed.length > 0 || abnormalLabs.length > 0 || bpAlert || fhrAlert || prevPregAlerts.length > 0;
 
   // Risk factors from first visit
   const riskFactors = getRiskFactors(patient);
@@ -416,6 +504,33 @@ export default function InfoTab({ patient, onViewVisits }) {
                   </span>
                   <span className="text-[11px] text-orange-500">FHR at last visit: {lastVisit.fetalHR} bpm</span>
                 </div>
+              )}
+
+              {/* Previous pregnancy complication alerts */}
+              {prevPregAlerts.length > 0 && (
+                <>
+                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mt-3 mb-1 flex items-center gap-1.5">
+                    <span className="text-amber-500">⏳</span> Previous Pregnancy Complications
+                  </p>
+                  {prevPregAlerts.map((alert, i) => (
+                    <div key={i} className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${alert.risk === "high" ? "bg-rose-50 border border-rose-200" : "bg-amber-50 border border-amber-200"
+                      }`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm ${alert.risk === "high" ? "text-rose-500" : "text-amber-500"}`}>
+                          {alert.risk === "high" ? "🔴" : "🟠"}
+                        </span>
+                        <div>
+                          <span className={`text-sm font-semibold ${alert.risk === "high" ? "text-rose-800" : "text-amber-800"}`}>
+                            {alert.label}
+                          </span>
+                          <p className={`text-[10px] ${alert.risk === "high" ? "text-rose-500" : "text-amber-500"}`}>
+                            Previous · {alert.source}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           </Card>
