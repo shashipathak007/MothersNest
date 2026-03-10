@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card.jsx";
 import { fmtDate } from "../../utils/helpers.js";
 
-const RISK_BORDER = { high: "#f43f5e", moderate: "#f59e0b", low: "#10b981" };
+const RISK_BORDER = { high: "#f43f5e", moderate: "#facc15", low: "#10b981" };
 
 export default function PostnatalCardMobile({ patient }) {
     const navigate = useNavigate();
@@ -20,16 +20,16 @@ export default function PostnatalCardMobile({ patient }) {
                     <p className="font-semibold text-stone-900">{patient.name}</p>
                     <p className="text-[11px] text-stone-400 mt-0.5">{patient.id} · {patient.phone}</p>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${patient.riskStatus === "high" ? "bg-red-50 text-rose-700" : patient.riskStatus === "moderate" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${patient.riskStatus === "high" ? "bg-rose-50 text-rose-700" : patient.riskStatus === "moderate" ? "bg-yellow-50 text-yellow-800" : "bg-emerald-50 text-emerald-700"}`}>
                     {patient.riskStatus}
                 </span>
             </div>
 
             <div className="flex flex-wrap gap-1.5 mb-3">
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${patient.deliveryMode?.includes("LSCS") ? "bg-violet-100 text-violet-700" : patient.deliveryMode?.includes("Assisted") ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${patient.deliveryMode?.includes("Assisted Breech") ? "bg-rose-100 text-rose-700" : patient.deliveryMode?.includes("LSCS") || patient.deliveryMode?.includes("Vacuum") || patient.deliveryMode?.includes("Forceps") ? "bg-yellow-100 text-yellow-800" : "bg-emerald-100 text-emerald-700"}`}>
                     {patient.deliveryMode}
                 </span>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${patient.babyStatus?.includes("Stillbirth") ? "bg-rose-100 text-rose-700" : patient.babyStatus?.includes("NICU") ? "bg-amber-100 text-amber-700" : "bg-stone-100 text-stone-600"}`}>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${patient.babyStatus?.includes("Stillbirth") || patient.babyStatus?.includes("Neonatal Death") ? "bg-rose-100 text-rose-700" : patient.babyStatus?.includes("NICU") || patient.babyStatus?.includes("Referred") || patient.babyStatus?.includes("Anomaly") ? "bg-yellow-100 text-yellow-800" : "bg-stone-100 text-stone-700"}`}>
                     {patient.babyStatus}
                 </span>
             </div>

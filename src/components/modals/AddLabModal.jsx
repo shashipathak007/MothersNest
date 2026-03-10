@@ -102,7 +102,7 @@ export default function AddLabModal({ patient, onClose }) {
           <FormInput label="Unit" value={form.unit} onChange={e => set("unit", e.target.value)} placeholder="e.g. g/dL" />
         </div>
 
-        {/* Auto-status indicator */}
+        {/* Auto-status indicator-- */}
         {form.test && form.value && (
           <div className={`rounded-xl px-3 py-2 flex items-center gap-2 text-xs font-semibold ${form.status === "abnormal" ? "bg-rose-50 text-rose-700 border border-rose-200"
               : "bg-emerald-50 text-emerald-700 border border-emerald-200"

@@ -25,17 +25,30 @@ function PostnatalRow({ patient }) {
             <td className="px-6 py-4 text-sm font-semibold text-stone-700">{fmtDate(patient.deliveryDate)}</td>
             <td className="px-6 py-4 text-sm text-stone-600 font-medium">G{patient.gravida}·P{patient.para}</td>
             <td className="px-6 py-4">
-                <span className={`text-sm font-semibold ${patient.bloodGroup?.includes("−") ? "text-violet-700" : "text-stone-700"}`}>
+                <span className={`text-sm font-semibold text-stone-700`}>
                     {patient.bloodGroup || "—"}
                 </span>
             </td>
             <td className="px-6 py-4">
-                <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${patient.deliveryMode?.includes("LSCS") ? "bg-violet-50 text-violet-700" : patient.deliveryMode?.includes("Assisted") ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
-                    {patient.deliveryMode || "—"}
+                <span className={`text-xs font-semibold px-2 py-1 rounded-lg 
+                    ${patient.deliveryMode?.includes("Assisted Breech") 
+                     ? "bg-rose-50 text-rose-700"
+                     : patient.deliveryMode?.includes("LSCS")
+                     || patient.deliveryMode?.includes("Vacuum") 
+                     || patient.deliveryMode?.includes("Forceps") 
+                     ? "bg-yellow-50 text-yellow-800"
+                     :"bg-emerald-50 text-emerald-700"}`}>
+                     {patient.deliveryMode || "—"}
                 </span>
             </td>
             <td className="px-6 py-4">
-                <span className={`text-xs font-semibold ${patient.babyStatus?.includes("Stillbirth") ? "text-rose-600" : patient.babyStatus?.includes("NICU") ? "text-amber-600" : "text-stone-700"}`}>
+                <span className={`text-xs font-semibold
+                     ${patient.babyStatus?.includes("Stillbirth") 
+                     || patient.babyStatus?.includes("Neonatal Death")
+                    ? "text-rose-600" : patient.babyStatus?.includes("NICU")
+                    || patient.babyStatus?.includes("Referred")
+                    || patient.babyStatus?.includes("Anomaly")
+                     ? "text-yellow-600" : "text-stone-700"}`}>
                     {patient.babyStatus || "—"}
                 </span>
             </td>
@@ -68,3 +81,5 @@ export default function PostnatalTable({ patients }) {
         </Card>
     );
 }
+
+

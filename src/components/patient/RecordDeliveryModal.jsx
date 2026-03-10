@@ -10,18 +10,18 @@ const EMPTY_FORM = {
     deliveryTime: "",
     deliveryMode: "",
     durationOfLabor: "",
-    maternalComplications: "None",
-    episiotomy: "No",
-    babySex: "Male",
+    maternalComplications: "",
+    episiotomy: "",
+    babySex: "",
     birthWeight: "",
     apgar1: "",
     apgar5: "",
-    babyStatus: "Healthy & Stable",
-    breastfeedingInitiated: "Yes",
+    babyStatus: "",
+    breastfeedingInitiated: "",
     dischargeDate: "",
     followUpDate: "",
-    familyPlanningCounseling: "Pending",
-    signsExplained: "Yes",
+    familyPlanningCounseling: "",
+    signsExplained: "",
     immunization: { bcg: false, opv: false, hepB: false }
 };
 
@@ -31,7 +31,7 @@ function DeliveryRiskBadge({ deliveryMode }) {
     if (!dt) return null;
     const config = {
         high: { bg: "bg-rose-600", border: "border-rose-700", text: "text-white", icon: "🔴", label: "HIGH RISK", desc: "Requires close monitoring and specialist care" },
-        moderate: { bg: "bg-amber-500", border: "border-amber-600", text: "text-white", icon: "🟠", label: "MODERATE RISK", desc: "Monitor for complications" },
+        moderate: { bg: "bg-yellow-400", border: "border-yellow-500", text: "text-white", icon: "🟡", label: "MODERATE RISK", desc: "Monitor for complications" },
         low: { bg: "bg-emerald-500", border: "border-emerald-600", text: "text-white", icon: "🟢", label: "LOW RISK", desc: "Normal delivery pathway" },
     };
     const c = config[dt.risk];

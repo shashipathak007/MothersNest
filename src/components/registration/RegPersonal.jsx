@@ -273,7 +273,7 @@ export default function RegPersonal({ form, set, setPartner, setMedFlag }) {
       </Card>
       {/* ───────────────────────────── */}
       {/* Partner Details */}
-      {/* ───────────────────────────── */}
+      {/* ──────────────────────────── */}
       <Card className="p-5">
         <SectionLabel>Partner Details</SectionLabel>
 

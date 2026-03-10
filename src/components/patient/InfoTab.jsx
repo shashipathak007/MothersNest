@@ -8,13 +8,19 @@ import SectionLabel from "../ui/SectionLabel.jsx";
 import { BASIC_MEDICAL_FLAGS, RISK_CONFIG, computeOverallRisk, DELIVERY_TYPES, OB_RISK_FLAGS } from "../../utils/helpers.js";
 
 /* ─── Small helper components ──────────────────────────────────────── */
-function RiskSourceBadge({ label, source }) {
+function RiskSourceBadge({ label, source, risk = "high" }) {
+  const isHigh = risk === "high";
+  const bg = isHigh ? "bg-rose-50 border-rose-100" : "bg-yellow-50 border-yellow-200";
+  const iconColor = isHigh ? "text-rose-500" : "text-yellow-600";
+  const textColor = isHigh ? "text-rose-800" : "text-yellow-800";
+  const subTextColor = isHigh ? "text-rose-500" : "text-yellow-600";
+
   return (
-    <div className="flex items-start gap-2 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">
-      <span className="text-rose-500 mt-0.5 shrink-0">⚠</span>
+    <div className={`flex items-start gap-2 border rounded-xl px-3 py-2 ${bg}`}>
+      <span className={`${iconColor} mt-0.5 shrink-0`}>⚠</span>
       <div>
-        <p className="text-xs font-semibold text-rose-800">{label}</p>
-        {source && <p className="text-[11px] text-rose-500 mt-0.5">{source}</p>}
+        <p className={`text-xs font-semibold ${textColor}`}>{label}</p>
+        {source && <p className={`text-[11px] mt-0.5 ${subTextColor}`}>{source}</p>}
       </div>
     </div>
   );
@@ -24,9 +30,9 @@ function RiskFlagPill({ label, level }) {
   const cls = level === "high"
     ? "bg-rose-100 text-rose-700 ring-1 ring-rose-200"
     : level === "moderate"
-      ? "bg-amber-100 text-amber-700 ring-1 ring-amber-200"
-      : "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200";
-  const icon = level === "high" ? "🔴" : level === "moderate" ? "🟠" : "🟢";
+      ? "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200"
+      : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+  const icon = level === "high" ? "🔴" : level === "moderate" ? "�" : "🟢";
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${cls}`}>
       {icon} {label}
@@ -37,8 +43,8 @@ function RiskFlagPill({ label, level }) {
 /* ─── Extract active risk factors from first visit ─────────────────── */
 function getRiskFactors(patient) {
   const factors = { high: [], moderate: [], low: [] };
-  const fv = patient.firstVisit;
-  if (!fv?.completed) return factors;
+  const fv = patient.firstVisit || patient.prevFirstVisit;
+  if (!fv) return factors;
 
   const ros = fv.reviewOfSystems || {};
   const med = fv.medicalHistory || {};
@@ -100,7 +106,7 @@ function PostnatalSummaryCard({ p }) {
   const deliveryRisk = dt?.risk || "low";
   const deliveryRiskConfig = {
     high: { bg: "bg-rose-600", text: "text-white", icon: "🔴", label: "HIGH RISK" },
-    moderate: { bg: "bg-amber-500", text: "text-white", icon: "🟠", label: "MODERATE RISK" },
+    moderate: { bg: "bg-yellow-400", text: "text-white", icon: "�", label: "MODERATE RISK" },
     low: { bg: "bg-emerald-500", text: "text-white", icon: "🟢", label: "LOW RISK" },
   };
   const drc = deliveryRiskConfig[deliveryRisk];
@@ -134,7 +140,7 @@ function PostnatalSummaryCard({ p }) {
 
         {/* Maternal Complication Flag */}
         {hasMaternalComplication && (
-          <div className={`${isSevereComplication ? "bg-rose-600" : "bg-amber-500"} text-white rounded-xl px-4 py-3 flex items-center gap-3`}>
+          <div className={`${isSevereComplication ? "bg-rose-600" : "bg-yellow-400"} text-white rounded-xl px-4 py-3 flex items-center gap-3`}>
             <span className="text-xl">{isSevereComplication ? "⚠" : "⚡"}</span>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider opacity-90">Maternal Complication</p>
@@ -145,7 +151,7 @@ function PostnatalSummaryCard({ p }) {
 
         {/* Baby Status Flag */}
         {!babyIsNormal && (
-          <div className={`${babyIsCritical ? "bg-rose-600" : babyNeedsAttention ? "bg-amber-500" : "bg-stone-500"} text-white rounded-xl px-4 py-3 flex items-center gap-3`}>
+          <div className={`${babyIsCritical ? "bg-rose-600" : babyNeedsAttention ? "bg-yellow-400" : "bg-stone-500"} text-white rounded-xl px-4 py-3 flex items-center gap-3`}>
             <span className="text-xl">{babyIsCritical ? "⚠" : "⚡"}</span>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider opacity-90">Baby Status</p>
@@ -170,7 +176,7 @@ function PostnatalSummaryCard({ p }) {
         </div>
         <div>
           <p className="text-[10px] text-stone-500 uppercase tracking-wider">Complications</p>
-          <p className={`font-semibold text-sm ${hasMaternalComplication ? (isSevereComplication ? "text-rose-700" : "text-amber-700") : "text-stone-800"}`}>
+          <p className={`font-semibold text-sm ${hasMaternalComplication ? (isSevereComplication ? "text-rose-700" : "text-yellow-700") : "text-stone-800"}`}>
             {p.maternalComplications || "None"}
           </p>
         </div>
@@ -179,7 +185,7 @@ function PostnatalSummaryCard({ p }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4 pt-4 border-t border-brand-100/50">
         <div>
           <p className="text-[10px] text-stone-500 uppercase tracking-wider">Baby Status</p>
-          <p className={`font-semibold text-sm ${babyIsCritical ? "text-rose-600" : babyNeedsAttention ? "text-amber-600" : "text-emerald-700"}`}>
+          <p className={`font-semibold text-sm ${babyIsCritical ? "text-rose-600" : babyNeedsAttention ? "text-yellow-600" : "text-emerald-700"}`}>
             {p.babyStatus || "—"}
           </p>
         </div>
@@ -235,8 +241,9 @@ export default function InfoTab({ patient, onViewVisits }) {
   const activeBasicMed = BASIC_MEDICAL_FLAGS.filter(f => patient.basicMedical?.[f.key]);
 
   // Extract previous pregnancy complications from per-pregnancy entries  
+  const prevFirstVisit = patient.firstVisit || patient.prevFirstVisit;
+  const prevPregs = prevFirstVisit?.obstetricHistory?.previousPregnancies || [];
   const prevPregAlerts = [];
-  const prevPregs = patient.firstVisit?.obstetricHistory?.previousPregnancies || [];
   const OB_FLAG_LABELS = {
     prevCS: "Caesarean Section", prevPPH: "PPH", prevPreterm: "Preterm Birth",
     prevStillbirth: "Stillbirth", prevEclampsia: "Eclampsia/PIH",
@@ -251,7 +258,7 @@ export default function InfoTab({ patient, onViewVisits }) {
         const riskDef = OB_RISK_FLAGS.find(f => f.key === key);
         prevPregAlerts.push({
           label, risk: riskDef?.risk || "moderate",
-          source: `Pregnancy #${idx + 1} (${preg.year || "—"})`,
+          source: `Previous Pregnancy History — Pregnancy #${idx + 1} (${preg.year || "—"})`,
         });
       }
     });
@@ -302,7 +309,7 @@ export default function InfoTab({ patient, onViewVisits }) {
 
         {/* Risk banner — Moderate */}
         {patient.riskLevel === "moderate" && (
-          <div className="bg-amber-500 text-white rounded-2xl px-4 py-3.5">
+          <div className="bg-yellow-400 text-white rounded-2xl px-4 py-3.5">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-base">⚠</span>
               <p className="text-xs font-bold uppercase tracking-wider">Moderate Risk</p>
@@ -310,7 +317,7 @@ export default function InfoTab({ patient, onViewVisits }) {
             {riskReasons.length > 0 && (
               <ul className="space-y-0.5 ml-1">
                 {riskReasons.map((r, i) => (
-                  <li key={i} className="text-[11px] text-amber-100">• {r}</li>
+                  <li key={i} className="text-[11px] text-yellow-50">• {r}</li>
                 ))}
               </ul>
             )}
@@ -403,8 +410,8 @@ export default function InfoTab({ patient, onViewVisits }) {
             {/* MODERATE RISK factors */}
             {riskFactors.moderate.length > 0 && (
               <div className="mb-4">
-                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <p className="text-[10px] font-bold text-yellow-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-yellow-400" />
                   Moderate Risk Conditions ({riskFactors.moderate.length})
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -467,9 +474,10 @@ export default function InfoTab({ patient, onViewVisits }) {
           <Card className="p-4">
             <SectionLabel>Active Alerts</SectionLabel>
             <div className="space-y-2">
-              {activeBasicMed.map(f => (
-                <RiskSourceBadge key={f.key} label={f.label} source="From registration · basic medical" />
-              ))}
+              {activeBasicMed.map(f => {
+                const risk = (f.key === "highBP" || f.key === "diabetes") ? "high" : "moderate";
+                return <RiskSourceBadge key={f.key} label={f.label} source="From registration · basic medical" risk={risk} />;
+              })}
 
               {abnormalLabs.map(l => (
                 <div key={l.id} className="flex items-center justify-between bg-rose-50 border border-rose-100 rounded-xl px-3 py-2.5">
@@ -482,9 +490,9 @@ export default function InfoTab({ patient, onViewVisits }) {
               ))}
 
               {pendingLabs.map(l => (
-                <div key={l.id} className="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
-                  <span className="text-sm font-medium text-amber-800">{l.test}</span>
-                  <span className="text-[10px] font-bold bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full uppercase">Pending</span>
+                <div key={l.id} className="flex items-center justify-between bg-yellow-50 border border-yellow-100 rounded-xl px-3 py-2.5">
+                  <span className="text-sm font-medium text-yellow-800">{l.test}</span>
+                  <span className="text-[10px] font-bold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full uppercase">Pending</span>
                 </div>
               ))}
 
@@ -510,20 +518,20 @@ export default function InfoTab({ patient, onViewVisits }) {
               {prevPregAlerts.length > 0 && (
                 <>
                   <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mt-3 mb-1 flex items-center gap-1.5">
-                    <span className="text-amber-500">⏳</span> Previous Pregnancy Complications
+                    <span className="text-yellow-500">⏳</span> Previous Pregnancy Complications
                   </p>
                   {prevPregAlerts.map((alert, i) => (
-                    <div key={i} className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${alert.risk === "high" ? "bg-rose-50 border border-rose-200" : "bg-amber-50 border border-amber-200"
+                    <div key={i} className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${alert.risk === "high" ? "bg-rose-50 border border-rose-200" : "bg-yellow-50 border border-yellow-200"
                       }`}>
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm ${alert.risk === "high" ? "text-rose-500" : "text-amber-500"}`}>
-                          {alert.risk === "high" ? "🔴" : "🟠"}
+                        <span className={`text-sm ${alert.risk === "high" ? "text-rose-500" : "text-yellow-500"}`}>
+                          {alert.risk === "high" ? "🔴" : "�"}
                         </span>
                         <div>
-                          <span className={`text-sm font-semibold ${alert.risk === "high" ? "text-rose-800" : "text-amber-800"}`}>
+                          <span className={`text-sm font-semibold ${alert.risk === "high" ? "text-rose-800" : "text-yellow-800"}`}>
                             {alert.label}
                           </span>
-                          <p className={`text-[10px] ${alert.risk === "high" ? "text-rose-500" : "text-amber-500"}`}>
+                          <p className={`text-[10px] ${alert.risk === "high" ? "text-rose-500" : "text-yellow-600"}`}>
                             Previous · {alert.source}
                           </p>
                         </div>

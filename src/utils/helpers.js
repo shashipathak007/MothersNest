@@ -92,7 +92,7 @@ export const PREV_PREG_OPTIONS = {
     { label: "SVD (Normal)", risk: "low" },
     { label: "Forceps / Vacuum", risk: "moderate" },
     { label: "LSCS (1st time)", risk: "moderate" },
-    { label: "LSCS (2nd or more)", risk: "high" },
+    { label: "LSCS (2nd or more)", risk: "moderate" },
   ],
   complications: [
     { label: "None", risk: "low" },
@@ -230,6 +230,24 @@ export function computeOverallRisk(patient) {
 
     // GBV / Domestic Violence — HIGH RISK
     if (fv.socialHistory?.domesticViolence) promote("high");
+  } else if (patient.prevFirstVisit) {
+    // Returning patient — check complications from previous pregnancy record
+    const ob = patient.prevFirstVisit.obstetricHistory || {};
+    const prevPregs = ob.previousPregnancies || [];
+
+    prevPregs.forEach(preg => {
+      // Check standard boolean flags which are already factored into autoRiskFromObHistory
+      // But we can also promote based on the text 'complications' field
+      if (preg.complications && preg.complications !== "None") promote("moderate");
+
+      // Specifically check flags on the pregnancy object if they exist
+      OB_RISK_FLAGS.forEach(f => {
+        if (preg[f.key]) promote(f.risk);
+      });
+    });
+
+    const fromOb = autoRiskFromObHistory(patient.prevFirstVisit.obstetricHistory);
+    promote(fromOb);
   } else {
     // No first visit yet — fallback to tags + basicMedical from registration
     const tagsRisk = autoRisk(patient.tags || [], patient.basicMedical || {});
@@ -333,7 +351,7 @@ export const ALL_TAGS = [...HIGH_RISK_TAGS, ...MOD_RISK_TAGS];
 
 export const RISK_CONFIG = {
   high: { label: "High Risk", dot: "bg-red-500", pill: "bg-red-50 text-rose-700 ring-1 ring-rose-200" },
-  moderate: { label: "Moderate Risk", dot: "bg-amber-500", pill: "bg-amber-50 text-amber-700 ring-1 ring-amber-200" },
+  moderate: { label: "Moderate Risk", dot: "bg-yellow-400", pill: "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200" },
   low: { label: "Low Risk", dot: "bg-emerald-500", pill: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" },
 };
 
@@ -477,7 +495,7 @@ export const DELIVERY_TYPES = [
   { label: "SVD (Spontaneous Vaginal Delivery)", risk: "low" },
   { label: "Normal Vaginal Delivery (SVD)", risk: "low" },
   { label: "Cesarean Section (LSCS)", risk: "moderate" },
-  { label: "LSCS (Emergency)", risk: "high" },
+  { label: "LSCS (Emergency)", risk: "moderate" },
   { label: "Forceps Delivery", risk: "moderate" },
   { label: "Vacuum Delivery", risk: "moderate" },
   { label: "Assisted Breech Delivery", risk: "high" },

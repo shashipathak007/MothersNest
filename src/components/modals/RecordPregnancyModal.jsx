@@ -67,7 +67,7 @@ function PrevPregnancySummary({ patient }) {
     );
 }
 
-/* ── Delivery Summary (last delivery) ────────────────────────────── */
+/* ── Delivery Summary (last delivery) ──────────────────────────── */
 function LastDeliverySummary({ patient }) {
     if (!patient.deliveryDate) return null;
 

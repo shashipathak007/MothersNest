@@ -374,7 +374,7 @@ const POSTNATAL_SEED = [
   },
   {
     id: "PN-004", name: "Sunita Rai", age: 35, phone: "9834567890", address: "Dhangadhi 1, Kailali",
-    bloodGroup: "AB−", religion: "Hindu", ethnicity: "Janajati", education: "Graduate", occupation: "Nurse",
+    bloodGroup: "AB", religion: "Hindu", ethnicity: "Janajati", education: "Graduate", occupation: "Nurse",
     weight: "68", height: "162", gravida: 4, para: 3,
     lmp: "2025-05-01", edd: "2026-02-05", ga: "44+2",
     deliveryDate: "2026-02-10", deliveryTime: "11:20", deliveryMode: "Vacuum Delivery", durationOfLabor: "16 hours", maternalComplications: "Anemia", episiotomy: "Yes",
@@ -384,7 +384,7 @@ const POSTNATAL_SEED = [
     tags: ["Rh Negative", "Elderly Gravida"], basicMedical: {},
     partner: { name: "Sunil Rai", age: 38, occupation: "Army" }, allergies: "Penicillin",
     firstVisit: {
-      completed: true, completedOn: "2025-07-10",
+      completed: true, completedOn: "2025-07-10",             
       menstrualHistory: { cycleNature: "Regular", lmp: "2025-05-01", regularCycles: true },
       obstetricHistory: {
         prevCS: false, prevPPH: false, detailedHistory: "G4P2L2A1.", previousPregnancies: [

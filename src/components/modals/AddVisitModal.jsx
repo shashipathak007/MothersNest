@@ -245,7 +245,7 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">GA (auto)</label>
-              <div className="px-3.5 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-800 font-semibold min-h-[42px]">
+              <div className="px-3.5 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-800 font-semibold min-h-10.5">
                 {form.ga || "—"}
               </div>
             </div>
@@ -282,8 +282,8 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
             <div className="flex flex-col gap-1.5 col-span-2">
               <label className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Height & BMI</label>
               <div className="flex items-center gap-2 w-full">
-                <input type="number" placeholder="ft" value={form.heightFt} onChange={e => set("heightFt", e.target.value)} className="w-[60px] px-3 py-2.5 text-sm border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white" />
-                <input type="number" placeholder="in" value={form.heightIn} onChange={e => set("heightIn", e.target.value)} className="w-[60px] px-3 py-2.5 text-sm border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white" />
+                <input type="number" placeholder="ft" value={form.heightFt} onChange={e => set("heightFt", e.target.value)} className="w-15 px-3 py-2.5 text-sm border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white" />
+                <input type="number" placeholder="in" value={form.heightIn} onChange={e => set("heightIn", e.target.value)} className="w-15 px-3 py-2.5 text-sm border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white" />
                 <div className={`flex-1 px-3 py-2.5 text-sm border rounded-xl text-center ${bmiStatus.cls}`}>
                   {bmi ? `${bmi} BMI${bmiStatus.label ? ` — ${bmiStatus.label}` : ""}` : "—"}
                 </div>
@@ -307,13 +307,13 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
 
             <div className="flex flex-col gap-1.5">
               <FormSelect label="Oedema" value={form.oedema} onChange={e => set("oedema", e.target.value)}
-                className={form.oedema === "None (−)" ? "bg-emerald-50 border-emerald-400 text-emerald-800 font-semibold" :
+                className={form.oedema === "None (-)" ? "bg-emerald-50 border-emerald-400 text-emerald-800 font-semibold" :
                   form.oedema ? "bg-orange-50 border-orange-400 text-orange-800 font-bold" : ""}>
                 <option value="">Select</option>
                 {OEDEMA_OPTIONS.map(o => <option key={o}>{o}</option>)}
               </FormSelect>
-              {form.oedema === "None (−)" && <p className="text-[10px] font-bold uppercase text-emerald-600">✓ Normal</p>}
-              {form.oedema && form.oedema !== "None (−)" && <p className="text-[10px] font-bold uppercase text-orange-600">⚠ Abnormal</p>}
+              {form.oedema === "None (-)" && <p className="text-[10px] font-bold uppercase text-emerald-600">✓ Normal</p>}
+              {form.oedema && form.oedema !== "None (-)" && <p className="text-[10px] font-bold uppercase text-orange-600">⚠ Abnormal</p>}
             </div>
 
             <div className="flex flex-col gap-1.5 col-span-2">
@@ -333,7 +333,7 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
               label="Key Findings *"
               value={form.findings}
               onChange={e => set("findings", e.target.value)}
-              placeholder="BP 130/84, Hb 10.8, FHR 148 bpm, fundal ht 28 cm..."
+              placeholder="BP 130/84, Hb 10.8, FHR 148 bpm"
               rows={4}
             />
             <FormTextarea
@@ -347,7 +347,7 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
 
           {/* GBV Screening Section */}
           <div className="space-y-2 mt-4">
-            <SectionLabel>GBV Screening</SectionLabel>
+            <SectionLabel>Gender Based Voilence Screening</SectionLabel>
             <div className="mb-2">
               <label className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all ${form.gbvRisk
                 ? "bg-rose-50 border-rose-300 ring-1 ring-rose-200"
@@ -361,7 +361,7 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
                 />
                 <div className="flex-1">
                   <p className={`text-xs font-bold ${form.gbvRisk ? "text-rose-800" : "text-stone-700"}`}>
-                    Gender-Based Violence
+                    Gender Based Violence
                   </p>
                 </div>
                 {form.gbvRisk && <span className="text-rose-500 text-sm animate-pulse">⚠</span>}
@@ -379,7 +379,7 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
           {form.tests.length > 0 && (
             <div className="mt-6">
               <SectionLabel>Investigations / Tests</SectionLabel>
-              <p className="text-[11px] text-stone-500 mb-3">Tests recommended for this ANC visit. Enter values directly.</p>
+              <p className="text-[11px] text-stone-500 mb-3">Recommended Tests for this ANC visit. Enter values directly.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {form.tests.map((t, idx) => {
                   const bgCls = t.status === "abnormal" ? "bg-rose-50 border-rose-200" :
