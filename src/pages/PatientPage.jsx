@@ -40,7 +40,7 @@ export default function PatientPage() {
   ];
 
   const header = (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6">
       <div className="flex items-center gap-4 h-14 border-b border-stone-100">
         <BrandLogo showText />
         <div className="w-px h-5 bg-stone-200" />
@@ -66,7 +66,7 @@ export default function PatientPage() {
 
   return (
     <AppShell header={header}>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
         {/* EDD Reached alert banner */}
         {isDueOrPast && (
