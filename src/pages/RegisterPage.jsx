@@ -123,6 +123,7 @@ export default function RegisterPage() {
       typeOfLabour: p.durationOfLabor ? "Spontaneous" : "",
       modeOfDelivery: p.deliveryMode || "",
       complications: p.maternalComplications && p.maternalComplications !== "None" ? p.maternalComplications : "",
+      babyComplications: p.babyStatus !== "Stable" && p.babyStatus !== "Healthy & Stable" ? p.babyStatus : "",
       babySex: p.babySex || "",
       babyWeight: p.birthWeight ? `${p.birthWeight} kg` : "",
       apgar: p.apgar5 ? `5min: ${p.apgar5}` : "",
@@ -138,8 +139,12 @@ export default function RegisterPage() {
       : existingPrevPregs;
 
     // Build prevFirstVisit with updated OB history
+    // IMPORTANT: Strip 'completed' so computeOverallRisk treats this as
+    // returning-patient history (scans previousPregnancies for delivery
+    // complications) instead of a current first visit.
+    const { completed: _stripped, ...prevFvBase } = p.firstVisit || {};
     const prevFirstVisit = p.firstVisit ? {
-      ...p.firstVisit,
+      ...prevFvBase,
       obstetricHistory: {
         ...(p.firstVisit.obstetricHistory || {}),
         previousPregnancies: allPrevPregs,
@@ -215,37 +220,39 @@ export default function RegisterPage() {
       }
     }
 
+    const registeredPatient = {
+      id: nextId(state.patients),
+      name: form.name.trim(),
+      age: parseInt(form.age) || 0,
+      phone: form.phone.trim(),
+      address: form.address.trim(),
+      bloodGroup: composedBloodGroup,
+      religion: form.religion,
+      ethnicity: form.ethnicity,
+      education: form.education,
+      occupation: form.occupation,
+      weight: form.weight,
+      height: heightCm ? heightCm.toFixed(1) : null,
+      bmi: bmi,
+      partner: form.partner,
+      basicMedical: form.basicMedical,
+      allergies: form.allergies.trim(),
+      gravida: parseInt(form.gravida) || 1,
+      para: parseInt(form.para) || 0,
+      lmp: form.lmp,
+      edd: form.edd || calcEDD(form.lmp),
+      ga: form.ga || calcGA(form.lmp),
+      tags: [],
+      registeredOn: today(),
+      visits: [],
+      labs: [],
+      firstVisit: form.prevFirstVisit || null,
+      prevFirstVisit: form.prevFirstVisit || null,
+    };
+
     dispatch({
       type: "ADD_PATIENT",
-      payload: {
-        id: nextId(state.patients),
-        name: form.name.trim(),
-        age: parseInt(form.age) || 0,
-        phone: form.phone.trim(),
-        address: form.address.trim(),
-        bloodGroup: composedBloodGroup,
-        religion: form.religion,
-        ethnicity: form.ethnicity,
-        education: form.education,
-        occupation: form.occupation,
-        weight: form.weight,
-        height: heightCm ? heightCm.toFixed(1) : null,
-        bmi: bmi,
-        partner: form.partner,
-        basicMedical: form.basicMedical,
-        allergies: form.allergies.trim(),
-        gravida: parseInt(form.gravida) || 1,
-        para: parseInt(form.para) || 0,
-        lmp: form.lmp,
-        edd: form.edd || calcEDD(form.lmp),
-        ga: form.ga || calcGA(form.lmp),
-        tags: [],
-        riskLevel: "low",
-        registeredOn: today(),
-        visits: [],
-        labs: [],
-        firstVisit: form.prevFirstVisit || null,
-      },
+      payload: registeredPatient,
     });
 
     navigate("/");
@@ -261,7 +268,7 @@ export default function RegisterPage() {
     return (
       <AppShell
         header={
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
             <BrandLogo />
             <div className="w-px h-5 bg-stone-200" />
             <BackButton label="Dashboard" to="/" />
@@ -434,7 +441,7 @@ export default function RegisterPage() {
 
   // ─── Steps 1 & 2: Registration form ───────────────────────────────────────
   const header = (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
       <BrandLogo />
       <div className="w-px h-5 bg-stone-200" />
       <BackButton label="Dashboard" to="/" />
@@ -449,7 +456,7 @@ export default function RegisterPage() {
 
   return (
     <AppShell header={header}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-8">
           <h1
             className="text-2xl font-bold text-stone-900 mb-1"
