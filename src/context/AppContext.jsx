@@ -384,7 +384,7 @@ const POSTNATAL_SEED = [
     tags: ["Rh Negative", "Elderly Gravida"], basicMedical: {},
     partner: { name: "Sunil Rai", age: 38, occupation: "Army" }, allergies: "Penicillin",
     firstVisit: {
-      completed: true, completedOn: "2025-07-10",             
+      completed: true, completedOn: "2025-07-10",
       menstrualHistory: { cycleNature: "Regular", lmp: "2025-05-01", regularCycles: true },
       obstetricHistory: {
         prevCS: false, prevPPH: false, detailedHistory: "G4P2L2A1.", previousPregnancies: [
@@ -753,7 +753,6 @@ function reducer(state, action) {
         visits: [],
         labs: [],
         tags: [],
-        riskLevel: "low",
         firstVisit: null,
         prevFirstVisit: prevFirstVisit,
         // Clear delivery fields so they don't confuse the antenatal view
@@ -764,6 +763,8 @@ function reducer(state, action) {
         birthWeight: undefined,
         babyStatus: undefined,
       };
+
+      newP.riskLevel = computeOverallRisk(newP);
 
       return {
         ...state,
