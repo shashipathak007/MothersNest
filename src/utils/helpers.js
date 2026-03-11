@@ -230,23 +230,71 @@ export function computeOverallRisk(patient) {
 
     // GBV / Domestic Violence — HIGH RISK
     if (fv.socialHistory?.domesticViolence) promote("high");
-  } else if (patient.prevFirstVisit) {
+
+    // Also scan previousPregnancies for delivery complications
+    // (important for returning patients who completed a new first visit)
+    const prevPregsFromFv = ob.previousPregnancies || [];
+    prevPregsFromFv.forEach(preg => {
+      const mode = preg.modeOfDelivery || "";
+      if (mode === "LSCS (Emergency)") promote("high");
+      else if (mode.includes("LSCS") || mode === "Forceps Delivery" || mode === "Vacuum Delivery" || mode === "Assisted Breech Delivery") promote("moderate");
+
+      const comp = preg.complications || "";
+      if (["PPH (Postpartum Hemorrhage)", "Eclampsia", "Sepsis"].includes(comp)) promote("high");
+      else if (["Retained Placenta", "Perineal Tear (3rd/4th Degree)"].includes(comp)) promote("moderate");
+
+      const baby = preg.babyComplications || preg.outcome || preg.babyStatus || "";
+      if (["Stillbirth", "Neonatal Death"].includes(baby)) promote("high");
+      else if (["NICU Admitted", "NICU admitted", "Referred", "Congenital Anomaly"].includes(baby)) promote("moderate");
+    });
+  } else if (patient.prevFirstVisit || (patient.firstVisit && !patient.firstVisit.completed)) {
     // Returning patient — check complications from previous pregnancy record
-    const ob = patient.prevFirstVisit.obstetricHistory || {};
+    const src = patient.prevFirstVisit || patient.firstVisit;
+    const ob = src.obstetricHistory || {};
     const prevPregs = ob.previousPregnancies || [];
 
     prevPregs.forEach(preg => {
-      // Check standard boolean flags which are already factored into autoRiskFromObHistory
-      // But we can also promote based on the text 'complications' field
-      if (preg.complications && preg.complications !== "None") promote("moderate");
+      // 1. Mode of Delivery Risk
+      const mode = preg.modeOfDelivery || "";
+      if (mode === "LSCS (Emergency)") {
+        promote("high");
+      } else if (
+        mode === "Cesarean Section (LSCS – Elective)" ||
+        mode === "Forceps Delivery" ||
+        mode === "Vacuum Delivery" ||
+        mode === "Assisted Breech Delivery" ||
+        mode === "Cesarean Section (LSCS)" ||
+        mode.includes("LSCS")
+      ) {
+        promote("moderate");
+      }
 
-      // Specifically check flags on the pregnancy object if they exist
+      // 2. Maternal Complications Risk
+      const comp = preg.complications || "";
+      if (["PPH (Postpartum Hemorrhage)", "Eclampsia", "Sepsis"].includes(comp) || comp.includes("PPH (Postpartum Hemorrhage)")) {
+        promote("high");
+      } else if (["Retained Placenta", "Perineal Tear (3rd/4th Degree)"].includes(comp)) {
+        promote("moderate");
+      } else if (comp && comp !== "None") {
+        // Fallback for other complications listed moderately
+        promote("moderate");
+      }
+
+      // 3. Baby Status Risk
+      const baby = preg.babyComplications || preg.outcome || preg.babyStatus || "";
+      if (["Stillbirth", "Neonatal Death"].includes(baby)) {
+        promote("high");
+      } else if (["NICU Admitted", "NICU admitted", "Referred", "Congenital Anomaly"].includes(baby)) {
+        promote("moderate");
+      }
+
+      // Check standard boolean flags from first visit history
       OB_RISK_FLAGS.forEach(f => {
         if (preg[f.key]) promote(f.risk);
       });
     });
 
-    const fromOb = autoRiskFromObHistory(patient.prevFirstVisit.obstetricHistory);
+    const fromOb = autoRiskFromObHistory(src.obstetricHistory);
     promote(fromOb);
   } else {
     // No first visit yet — fallback to tags + basicMedical from registration
@@ -423,8 +471,50 @@ export function getPatientConditions(patient) {
     if (ros.fetalMovements) add("Reduced Fetal Movement", "high");
     if (ros.contractions) add("Preterm Contractions", "high");
 
-    // Social / GBV
     if (fv.socialHistory?.domesticViolence) add("GBV Risk", "high");
+  } else if (patient.prevFirstVisit) {
+    // If no active first visit, pull conditions from previous pregnancies context
+    const ob = patient.prevFirstVisit.obstetricHistory || {};
+    const prevPregs = ob.previousPregnancies || [];
+
+    prevPregs.forEach(preg => {
+      // 1. Mode of Delivery Risk
+      const mode = preg.modeOfDelivery || "";
+      if (mode === "LSCS (Emergency)") add(mode, "high");
+      else if (
+        mode === "Cesarean Section (LSCS – Elective)" ||
+        mode === "Forceps Delivery" ||
+        mode === "Vacuum Delivery" ||
+        mode === "Assisted Breech Delivery" ||
+        mode === "Cesarean Section (LSCS)" ||
+        mode.includes("LSCS")
+      ) {
+        add(mode, "moderate");
+      }
+
+      // 2. Maternal Complications Risk
+      const comp = preg.complications || "";
+      if (["PPH (Postpartum Hemorrhage)", "Eclampsia", "Sepsis"].includes(comp) || comp.includes("PPH (Postpartum Hemorrhage)")) {
+        add(comp, "high");
+      } else if (["Retained Placenta", "Perineal Tear (3rd/4th Degree)"].includes(comp)) {
+        add(comp, "moderate");
+      } else if (comp && comp !== "None") {
+        add(comp, "moderate");
+      }
+
+      // 3. Baby Status Risk
+      const baby = preg.babyComplications || preg.outcome || preg.babyStatus || "";
+      if (["Stillbirth", "Neonatal Death"].includes(baby)) {
+        add(`Prev ${baby}`, "high");
+      } else if (["NICU Admitted", "NICU admitted", "Referred", "Congenital Anomaly"].includes(baby)) {
+        add(`Prev ${baby}`, "moderate");
+      }
+
+      // Standard flags
+      OB_RISK_FLAGS.forEach((f) => {
+        if (preg[f.key]) add(f.label.replace("Previous ", "Prev "), f.risk);
+      });
+    });
   }
 
   // Support for generic obstetricFlags if firstVisit not used
