@@ -90,15 +90,21 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
     if (contact) {
       const suggested = getTestsForContact(contact);
       setForm(prev => {
-        const existingTests = [...prev.tests];
-        const newTests = suggested.filter(s => !existingTests.some(e => e.test === s)).map(t => ({
+        // Build a map of existing test values so we preserve entered data
+        const existingMap = {};
+        prev.tests.forEach(t => { existingMap[t.test] = t; });
+        // Replace tests with ONLY the ones for this contact, keeping entered values
+        const newTests = suggested.map(t => existingMap[t] || {
           test: t,
           value: "",
           unit: getLabUnit(t),
           status: "pending"
-        }));
-        return { ...prev, tests: [...existingTests, ...newTests] };
+        });
+        return { ...prev, tests: newTests };
       });
+    } else {
+      // No contact detected — clear suggested tests
+      setForm(prev => ({ ...prev, tests: [] }));
     }
   }, [form.type]);
 
