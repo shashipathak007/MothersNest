@@ -92,7 +92,7 @@ export const PREV_PREG_OPTIONS = {
     { label: "SVD (Normal)", risk: "low" },
     { label: "Forceps / Vacuum", risk: "moderate" },
     { label: "LSCS (1st time)", risk: "moderate" },
-    { label: "LSCS (2nd or more)", risk: "moderate" },
+    { label: "LSCS (2nd or more)", risk: "High" },
   ],
   complications: [
     { label: "None", risk: "low" },
@@ -387,6 +387,44 @@ export function computeOverallRisk(patient) {
     }
   }
 
+  // ── 6. Delivery-based risk (postnatal) ──
+  if (patient.patientType === "postnatal") {
+    // Mode of Delivery
+    const dt = (DELIVERY_TYPES || []).find(t => t.label === patient.deliveryMode);
+    if (dt?.risk === "high") promote("high");
+    else if (dt?.risk === "moderate") promote("moderate");
+
+    // Maternal Complications
+    const comp = patient.maternalComplications || "";
+    if (["PPH (Postpartum Hemorrhage)", "Eclampsia", "Sepsis", "Postpartum hemorrhage"].some(c => comp.includes(c))) promote("high");
+    else if (["Retained Placenta", "Perineal Tear (3rd/4th Degree)"].some(c => comp.includes(c))) promote("moderate");
+
+    // Baby Birth Weight (ELBW/VLBW = High, LBW/Macrosomia = Moderate)
+    const w = parseFloat(patient.birthWeight);
+    if (!isNaN(w)) {
+      if (w < 1.5) promote("high");
+      else if (w < 2.5 || w > 4.0) promote("moderate");
+    }
+
+    // APGAR Score
+    const a1 = parseInt(patient.apgar1);
+    const a5 = parseInt(patient.apgar5);
+    const ad = parseInt(patient.apgarDischarge);
+    [a1, a5, ad].forEach(score => {
+      if (!isNaN(score)) {
+        if (score <= 3) promote("high");
+        else if (score <= 6) promote("moderate");
+      }
+    });
+
+    // Check stored risks (flags computed during recording)
+    if (patient._risks) {
+      Object.values(patient._risks).forEach(r => {
+        if (typeof r === 'object' && r?.level) promote(r.level);
+      });
+    }
+  }
+
   return risk;
 }
 
@@ -554,7 +592,7 @@ export const OCCUPATIONS = [
   "Business", "Government Employee", "Labourer", "Other",
 ];
 export const RELIGIONS = ["Hindu", "Buddhist", "Muslim", "Christian", "Kirat", "Other"];
-export const ETHNICITIES = ["Brahmin", "Chhetri", "Janajati", "Madhesi", "Dalit", "Muslim", "Other"];
+export const ETHNICITIES = ["Brahmin","Thakuri", "Chhetri", "Janajati", "Madhesi", "Dalit", "Muslim", "Other"];
 
 /* ─── Visit types ────────────────────────────────────────────────── */
 export const VISIT_TYPES = [
@@ -585,7 +623,7 @@ export const DELIVERY_TYPES = [
   { label: "SVD (Spontaneous Vaginal Delivery)", risk: "low" },
   { label: "Normal Vaginal Delivery (SVD)", risk: "low" },
   { label: "Cesarean Section (LSCS)", risk: "moderate" },
-  { label: "LSCS (Emergency)", risk: "moderate" },
+  { label: "LSCS (Emergency)", risk: "high" },
   { label: "Forceps Delivery", risk: "moderate" },
   { label: "Vacuum Delivery", risk: "moderate" },
   { label: "Assisted Breech Delivery", risk: "high" },
@@ -647,32 +685,39 @@ export function getCurrentANCContact(lmp) {
 export const ANC_VISIT_TESTS = {
   1: [
     "Haemoglobin", "Blood Group", "Rhesus Factor",
-    "HIV Status", "VDRL/RPR (Syphilis)", "Hepatitis B (HBsAg)", "HPV Test",
+    "HIV Status", "VDRL/RPR (Syphilis)", "Hepatitis B (HBsAg)",
     "Blood Glucose (RBS)",
     "Urine — Protein", "Urine — Glucose", "Urine — Leucocytes",
     "Early U/S (<24wks)",
   ],
   2: [
     "Haemoglobin", "Urine Protein", "Urine Sugar",
+    "HIV Status", "VDRL/RPR (Syphilis)",
   ],
   3: [
     "Haemoglobin", "Urine Protein", "Urine Sugar", "Anomaly Scan",
+    "HIV Status", "VDRL/RPR (Syphilis)",
   ],
   4: [
     "Haemoglobin", "Urine Protein", "Urine Sugar",
     "OGTT 75g (Fasting)", "OGTT 75g (1 hr)", "OGTT 75g (2 hr)",
+    "HIV Status", "VDRL/RPR (Syphilis)",
   ],
   5: [
     "Urine Protein", "Urine Sugar",
+    "HIV Status", "VDRL/RPR (Syphilis)",
   ],
   6: [
     "Haemoglobin", "Urine Protein", "Urine Sugar",
+    "HIV Status", "VDRL/RPR (Syphilis)",
   ],
   7: [
     "Urine Protein", "Urine Sugar",
+    "HIV Status", "VDRL/RPR (Syphilis)",
   ],
   8: [
     "Haemoglobin", "Urine Protein", "Urine Sugar", "Growth Scan",
+    "HIV Status", "VDRL/RPR (Syphilis)",
   ],
 };
 
@@ -981,5 +1026,87 @@ export function fetalHRFlag(fhr) {
   if (n < 110) return "bradycardia";
   if (n > 160) return "tachycardia";
   return "normal";
+}
+
+/* ─── Delivery risk assessment helpers ───────────────────────────── */
+
+/**
+ * Baby birth weight risk classification.
+ * Returns { level: 'high'|'moderate'|'normal', label: string }
+ */
+export function birthWeightRisk(weightKg) {
+  const w = parseFloat(weightKg);
+  if (isNaN(w) || w <= 0) return null;
+  if (w < 1)   return { level: "high",     label: "Extremely Low Birth Weight (< 1 kg)" };
+  if (w < 1.5) return { level: "high",     label: "Very Low Birth Weight (1 – 1.5 kg)" };
+  if (w < 2.5) return { level: "moderate", label: "Low Birth Weight (1.5 – 2.5 kg)" };
+  if (w <= 4)  return { level: "normal",   label: "Normal Birth Weight (2.5 – 4 kg)" };
+  return { level: "moderate", label: "Macrosomia / High Birth Weight (> 4 kg)" };
+}
+
+/**
+ * APGAR score risk classification (for 1 min, 5 min, or discharge).
+ * Returns { level: 'high'|'moderate'|'normal', label: string }
+ */
+export function apgarRisk(score) {
+  const s = parseInt(score, 10);
+  if (isNaN(s) || s < 0 || s > 10) return null;
+  if (s <= 3) return { level: "high",     label: "Severe distress (0 – 3)" };
+  if (s <= 6) return { level: "moderate", label: "Moderate distress (4 – 6)" };
+  return { level: "normal", label: "Healthy (7 – 10)" };
+}
+
+/**
+ * Labour duration risk by stage, considering primigravida vs multigravida.
+ * @param {number} stage - 1, 2, or 3
+ * @param {number|string} duration - for stage 1 (hours), for stage 2/3 (minutes)
+ * @param {boolean} isPrimigravida - true if no previous births (para === 0)
+ * Returns { level: 'high'|'moderate'|'normal', label: string } or null
+ */
+export function labourDurationRisk(stage, duration, isPrimigravida) {
+  const val = parseFloat(duration);
+  if (isNaN(val) || val < 0) return null;
+
+  if (stage === 1) {
+    // Stage 1 – Cervical Dilatation (input is in hours)
+    const hrs = val;
+    if (isPrimigravida) {
+      if (hrs > 20) return { level: "high",     label: `Stage 1: ${hrs.toFixed(1)}h — Prolonged (> 20h, Primigravida)` };
+      if (hrs > 12) return { level: "moderate", label: `Stage 1: ${hrs.toFixed(1)}h — Extended (12–20h, Primigravida)` };
+      if (hrs >= 8) return { level: "normal",   label: `Stage 1: ${hrs.toFixed(1)}h — Normal (8–12h, Primigravida)` };
+      return { level: "normal", label: `Stage 1: ${hrs.toFixed(1)}h — Within range (Primigravida)` };
+    } else {
+      if (hrs > 14) return { level: "high",     label: `Stage 1: ${hrs.toFixed(1)}h — Prolonged (> 14h, Multigravida)` };
+      if (hrs > 8)  return { level: "moderate", label: `Stage 1: ${hrs.toFixed(1)}h — Extended (8–14h, Multigravida)` };
+      if (hrs >= 5) return { level: "normal",   label: `Stage 1: ${hrs.toFixed(1)}h — Normal (5–8h, Multigravida)` };
+      return { level: "normal", label: `Stage 1: ${hrs.toFixed(1)}h — Within range (Multigravida)` };
+    }
+  }
+
+  const mins = val;
+  if (stage === 2) {
+    // Stage 2 – Baby Delivery
+    if (isPrimigravida) {
+      if (mins > 180) return { level: "high",     label: `Stage 2: ${mins} min — Prolonged (> 3h, Primigravida)` };
+      if (mins > 120) return { level: "moderate", label: `Stage 2: ${mins} min — Extended (2–3h, Primigravida)` };
+      if (mins >= 30) return { level: "normal",   label: `Stage 2: ${mins} min — Normal (30min–2h, Primigravida)` };
+      return { level: "normal", label: `Stage 2: ${mins} min — Within range (Primigravida)` };
+    } else {
+      if (mins > 120) return { level: "high",     label: `Stage 2: ${mins} min — Prolonged (> 2h, Multigravida)` };
+      if (mins > 60)  return { level: "moderate", label: `Stage 2: ${mins} min — Extended (1–2h, Multigravida)` };
+      if (mins >= 5)  return { level: "normal",   label: `Stage 2: ${mins} min — Normal (5–60min, Multigravida)` };
+      return { level: "normal", label: `Stage 2: ${mins} min — Within range (Multigravida)` };
+    }
+  }
+
+  if (stage === 3) {
+    // Stage 3 – Placenta Delivery (same for both)
+    if (mins > 60) return { level: "high",     label: `Stage 3: ${mins} min — Prolonged (> 60 min)` };
+    if (mins > 30) return { level: "moderate", label: `Stage 3: ${mins} min — Extended (30–60 min)` };
+    if (mins >= 5) return { level: "normal",   label: `Stage 3: ${mins} min — Normal (5–30 min)` };
+    return { level: "normal", label: `Stage 3: ${mins} min — Within range` };
+  }
+
+  return null;
 }
 
