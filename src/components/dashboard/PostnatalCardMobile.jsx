@@ -32,6 +32,16 @@ export default function PostnatalCardMobile({ patient }) {
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${patient.babyStatus?.includes("Stillbirth") || patient.babyStatus?.includes("Neonatal Death") ? "bg-rose-100 text-rose-700" : patient.babyStatus?.includes("NICU") || patient.babyStatus?.includes("Referred") || patient.babyStatus?.includes("Anomaly") ? "bg-yellow-100 text-yellow-800" : "bg-stone-100 text-stone-700"}`}>
                     {patient.babyStatus}
                 </span>
+                {patient.birthWeight && (
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 ${parseFloat(patient.birthWeight) < 1.5 ? "text-rose-600" : parseFloat(patient.birthWeight) < 2.5 ? "text-amber-600" : "text-stone-700"}`}>
+                        {patient.birthWeight} kg
+                    </span>
+                )}
+                {patient.apgar5 && (
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 ${parseInt(patient.apgar5) <= 3 ? "text-rose-600" : parseInt(patient.apgar5) <= 6 ? "text-amber-600" : "text-stone-700"}`}>
+                        APGAR: {patient.apgar1 || "?"}/{patient.apgar5}/{patient.apgarDischarge || "?"}
+                    </span>
+                )}
             </div>
 
             <div className="flex items-center justify-between text-xs text-stone-400">
