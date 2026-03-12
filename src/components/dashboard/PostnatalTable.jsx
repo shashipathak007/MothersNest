@@ -9,10 +9,20 @@ const RISK_PILL = {
     low: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
 };
 
-const HEADERS = ["Patient", "Delivery Date", "G·P", "Blood", "Delivery Mode", "Baby Status", "Follow-up", ""];
+const HEADERS = ["Patient", "Delivery Date", "G·P", "Weight", "APGAR (1/5/D)", "Delivery Mode", "Baby Status", "Follow-up", ""];
 
 function PostnatalRow({ patient }) {
     const navigate = useNavigate();
+
+    // Weight risk
+    const w = parseFloat(patient.birthWeight);
+    const wColor = w < 1.5 ? "text-rose-600" : w < 2.5 || w > 4.0 ? "text-amber-600" : "text-stone-700";
+
+    // APGAR risk checks for coloring
+    const isAPGARHigh = (s) => s && parseInt(s) <= 3;
+    const isAPGARMod = (s) => s && parseInt(s) <= 6;
+    const getAPGARColor = (s) => isAPGARHigh(s) ? "text-rose-600" : isAPGARMod(s) ? "text-amber-600" : "text-stone-700";
+
     return (
         <tr
             onClick={() => navigate(`/patient/${patient.id}`)}
@@ -24,10 +34,13 @@ function PostnatalRow({ patient }) {
             </td>
             <td className="px-6 py-4 text-sm font-semibold text-stone-700">{fmtDate(patient.deliveryDate)}</td>
             <td className="px-6 py-4 text-sm text-stone-600 font-medium">G{patient.gravida}·P{patient.para}</td>
-            <td className="px-6 py-4">
-                <span className={`text-sm font-semibold text-stone-700`}>
-                    {patient.bloodGroup || "—"}
-                </span>
+            <td className="px-6 py-4 text-sm font-bold">
+                <span className={wColor}>{patient.birthWeight ? `${patient.birthWeight} kg` : "—"}</span>
+            </td>
+            <td className="px-6 py-4 text-xs font-bold font-mono">
+                <span className={getAPGARColor(patient.apgar1)}>{patient.apgar1 || "—"}</span>/
+                <span className={getAPGARColor(patient.apgar5)}>{patient.apgar5 || "—"}</span>/
+                <span className={getAPGARColor(patient.apgarDischarge)}>{patient.apgarDischarge || "—"}</span>
             </td>
             <td className="px-6 py-4">
                 <span className={`text-xs font-semibold px-2 py-1 rounded-lg 
