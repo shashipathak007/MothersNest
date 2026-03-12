@@ -5,7 +5,7 @@ import AlertsCard from "./AlertsCard.jsx";
 import VisitCard from "./VisitCard.jsx";
 import Card from "../ui/Card.jsx";
 import SectionLabel from "../ui/SectionLabel.jsx";
-import { BASIC_MEDICAL_FLAGS, RISK_CONFIG, computeOverallRisk, DELIVERY_TYPES, OB_RISK_FLAGS } from "../../utils/helpers.js";
+import { BASIC_MEDICAL_FLAGS, RISK_CONFIG, computeOverallRisk, DELIVERY_TYPES, OB_RISK_FLAGS, birthWeightRisk, apgarRisk, labourDurationRisk } from "../../utils/helpers.js";
 
 /* ─── Small helper components ──────────────────────────────────────── */
 function RiskSourceBadge({ label, source, risk = "high" }) {
@@ -106,7 +106,7 @@ function PostnatalSummaryCard({ p }) {
   const deliveryRisk = dt?.risk || "low";
   const deliveryRiskConfig = {
     high: { bg: "bg-rose-600", text: "text-white", icon: "🔴", label: "HIGH RISK" },
-    moderate: { bg: "bg-yellow-400", text: "text-white", icon: "�", label: "MODERATE RISK" },
+    moderate: { bg: "bg-yellow-400", text: "text-white", icon: "🟡", label: "MODERATE RISK" },
     low: { bg: "bg-emerald-500", text: "text-white", icon: "🟢", label: "LOW RISK" },
   };
   const drc = deliveryRiskConfig[deliveryRisk];
@@ -119,6 +119,30 @@ function PostnatalSummaryCard({ p }) {
   const babyIsNormal = ["Stable", "Healthy & Stable"].includes(p.babyStatus);
   const babyIsCritical = ["Stillbirth", "Neonatal Death"].includes(p.babyStatus);
   const babyNeedsAttention = ["NICU admitted", "Referred", "Congenital Anomaly"].includes(p.babyStatus);
+
+  // Delivery risk flags
+  const wRisk = birthWeightRisk(p.birthWeight);
+  const a1Risk = apgarRisk(p.apgar1);
+  const a5Risk = apgarRisk(p.apgar5);
+  const aDischRisk = apgarRisk(p.apgarDischarge);
+
+  // Labour stage risks
+  // Only multigravida if she has given birth before (para > 0)
+  const isPrimigravida = (parseInt(p.para) || 0) === 0;
+  const s1Risk = labourDurationRisk(1, p.labourStage1, isPrimigravida);
+  const s2Risk = labourDurationRisk(2, p.labourStage2, isPrimigravida);
+  const s3Risk = labourDurationRisk(3, p.labourStage3, isPrimigravida);
+
+  // Collect non-normal risks
+  const deliveryRiskFlags = [
+    wRisk && wRisk.level !== "normal" ? { ...wRisk, title: "Birth Weight" } : null,
+    a1Risk && a1Risk.level !== "normal" ? { ...a1Risk, title: "APGAR 1 min" } : null,
+    a5Risk && a5Risk.level !== "normal" ? { ...a5Risk, title: "APGAR 5 min" } : null,
+    aDischRisk && aDischRisk.level !== "normal" ? { ...aDischRisk, title: "APGAR Discharge" } : null,
+    s1Risk && s1Risk.level !== "normal" ? { ...s1Risk, title: "Labour Stage 1" } : null,
+    s2Risk && s2Risk.level !== "normal" ? { ...s2Risk, title: "Labour Stage 2" } : null,
+    s3Risk && s3Risk.level !== "normal" ? { ...s3Risk, title: "Labour Stage 3" } : null,
+  ].filter(Boolean);
 
   return (
     <Card className="p-5 border-2 border-brand-200 bg-brand-50/30">
@@ -161,6 +185,25 @@ function PostnatalSummaryCard({ p }) {
         )}
       </div>
 
+      {/* ── Delivery Risk Assessment Flags ──────────────── */}
+      {deliveryRiskFlags.length > 0 && (
+        <div className="mb-4 p-3 bg-stone-50 rounded-xl border border-stone-100">
+          <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <span>📊</span> Delivery Risk Assessment
+            <span className="font-normal text-stone-400 ml-1">({isPrimigravida ? "Primigravida" : "Multigravida"})</span>
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {deliveryRiskFlags.map((r, i) => (
+              <span key={i} className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                r.level === "high" ? "bg-rose-100 text-rose-800" : "bg-yellow-100 text-yellow-800"
+              }`}>
+                {r.level === "high" ? "🔴" : "🟡"} {r.title}: {r.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
         <div>
           <p className="text-[10px] text-stone-500 uppercase tracking-wider">Delivery Date</p>
@@ -191,15 +234,55 @@ function PostnatalSummaryCard({ p }) {
         </div>
         <div>
           <p className="text-[10px] text-stone-500 uppercase tracking-wider">Baby Sex / Weight</p>
-          <p className="font-semibold text-stone-800 text-sm">{p.babySex || "—"} / {p.birthWeight ? `${p.birthWeight} kg` : "—"}</p>
+          <p className="font-semibold text-stone-800 text-sm">
+            {p.babySex || "—"} / {p.birthWeight ? `${p.birthWeight} kg` : "—"}
+            {wRisk && wRisk.level !== "normal" && (
+              <span className={`ml-1 text-[10px] font-bold ${wRisk.level === "high" ? "text-rose-600" : "text-yellow-600"}`}>
+                ({wRisk.level === "high" ? "⚠ HIGH" : "⚠ MOD"})
+              </span>
+            )}
+          </p>
         </div>
         <div>
           <p className="text-[10px] text-stone-500 uppercase tracking-wider">APGAR Score</p>
-          <p className="font-semibold text-stone-800 text-sm">{p.apgar1 ? `${p.apgar1} (1m)` : "—"} {p.apgar5 ? <span className="text-stone-500 font-normal">/ {p.apgar5} (5m)</span> : ""}</p>
+          <p className="font-semibold text-stone-800 text-sm">
+            {p.apgar1 ? (
+              <span className={a1Risk && a1Risk.level !== "normal" ? (a1Risk.level === "high" ? "text-rose-600" : "text-yellow-600") : ""}>
+                {p.apgar1} (1m)
+              </span>
+            ) : "—"}{" "}
+            {p.apgar5 ? (
+              <span className={`${a5Risk && a5Risk.level !== "normal" ? (a5Risk.level === "high" ? "text-rose-600" : "text-yellow-600") : "text-stone-500"} font-normal`}>
+                / {p.apgar5} (5m)
+              </span>
+            ) : ""}
+          </p>
         </div>
         <div>
+          <p className="text-[10px] text-stone-500 uppercase tracking-wider">APGAR at Discharge</p>
+          <p className={`font-semibold text-sm ${
+            aDischRisk && aDischRisk.level === "high" ? "text-rose-600" :
+            aDischRisk && aDischRisk.level === "moderate" ? "text-yellow-600" :
+            "text-stone-800"
+          }`}>
+            {p.apgarDischarge ? (
+              <>
+                {p.apgarDischarge}
+                {aDischRisk && aDischRisk.level !== "normal" && (
+                  <span className="text-[10px] ml-1">
+                    ({aDischRisk.level === "high" ? "⚠ Distress" : "⚠ Moderate"})
+                  </span>
+                )}
+              </>
+            ) : "—"}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4 pt-4 border-t border-brand-100/50">
+        <div>
           <p className="text-[10px] text-stone-500 uppercase tracking-wider">Breastfeeding</p>
-          <p className="font-semibold text-stone-800 text-sm">{p.bfedInitiated === "Yes" ? "Initiated ✓" : "Not initiated"}</p>
+          <p className="font-semibold text-stone-800 text-sm">{p.bfedInitiated === "Yes" || p.breastfeedingInitiated === "Yes" ? "Initiated ✓" : "Not initiated"}</p>
         </div>
       </div>
 
