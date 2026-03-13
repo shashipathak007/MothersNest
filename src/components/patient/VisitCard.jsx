@@ -224,6 +224,62 @@ export default function VisitCard({ visit, isLatest = false, onEdit }) {
               (!visit.reviewOfSystems || Object.values(visit.reviewOfSystems).every(v => !v)) && (
                 <p className="text-xs text-stone-400 italic">No additional details recorded for this visit. Click Edit to add details.</p>
               )}
+
+            {/* Auto-assessed risk banner */}
+            {(() => {
+              let level = "low";
+              const promote = (lvl) => {
+                const order = { low: 0, moderate: 1, high: 2 };
+                if (order[lvl] > order[level]) level = lvl;
+              };
+              const details = [];
+
+              if (visit.bpFlag === "severe") { promote("high"); details.push("Severe BP"); }
+              else if (visit.bpFlag === "high") { promote("moderate"); details.push("High BP"); }
+              if (visit.pulseFlag === "high" || visit.pulseFlag === "low") { promote("moderate"); details.push(`Pulse ${visit.pulseFlag}`); }
+              if (visit.fhrFlag === "bradycardia" || visit.fhrFlag === "tachycardia") { promote("moderate"); details.push(`FHR ${visit.fhrFlag}`); }
+              if (visit.oedema && visit.oedema !== "None (−)") { promote("moderate"); details.push(`Oedema ${visit.oedema}`); }
+              if (visit.bmi) {
+                const bv = parseFloat(visit.bmi);
+                if (bv < 18.5) { promote("moderate"); details.push("Low BMI"); }
+                if (bv > 24.9) { promote("moderate"); details.push("High BMI"); }
+              }
+              if (visit.gbvRisk) { promote("high"); details.push("GBV Risk"); }
+              if (visit.reviewOfSystems) {
+                const ros = visit.reviewOfSystems;
+                if (ros.pvBleeding) { promote("high"); details.push("PV Bleeding"); }
+                if (ros.fetalMovements) { promote("high"); details.push("Reduced Fetal Movements"); }
+                if (ros.contractions) { promote("high"); details.push("Contractions"); }
+                if (ros.headache && ros.visualDisturbance) { promote("high"); details.push("Pre-eclampsia Signs"); }
+                else if (ros.headache) { promote("moderate"); details.push("Headache"); }
+                if (ros.pvDischarge) { promote("moderate"); details.push("PV Discharge"); }
+                if (ros.pelvicPain) { promote("moderate"); details.push("Pelvic Pain"); }
+              }
+              visit.tests?.filter(t => t.value && t.value.trim() !== "").forEach(t => {
+                if (t.status === "abnormal") { promote("high"); details.push(`${t.test}`); }
+                else if (t.status === "moderate") { promote("moderate"); details.push(`${t.test}`); }
+              });
+
+              const cfg = {
+                high: { bg: "bg-rose-50", border: "border-rose-200", dot: "bg-rose-500", text: "text-rose-700", label: "HIGH RISK" },
+                moderate: { bg: "bg-amber-50", border: "border-amber-200", dot: "bg-amber-400", text: "text-amber-700", label: "MODERATE RISK" },
+                low: { bg: "bg-emerald-50", border: "border-emerald-200", dot: "bg-emerald-500", text: "text-emerald-700", label: "LOW RISK" },
+              };
+              const c = cfg[level];
+              const detailLine = details.slice(0, 3).join(" · ") + (details.length > 3 ? ` +${details.length - 3} more` : "");
+
+              return (
+                <div className={`${c.bg} border ${c.border} rounded-xl px-4 py-2.5 flex items-center gap-3 mt-2`}>
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${c.dot}`} />
+                  <div className="flex-1">
+                    <p className={`text-[10px] font-bold uppercase tracking-wider ${c.text}`}>
+                      AUTO-ASSESSED: {c.label}
+                    </p>
+                    {detailLine && <p className={`text-[9px] ${c.text} opacity-75 mt-0.5`}>{detailLine}</p>}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
