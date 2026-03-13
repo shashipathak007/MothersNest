@@ -455,6 +455,83 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
             </div>
           )}
 
+          {/* ── Overall Auto-Assessed Risk Banner ──────────── */}
+          {(() => {
+            // Collect risk signals from this visit
+            let overallLevel = "low";
+            const promote = (lvl) => {
+              const order = { low: 0, moderate: 1, high: 2 };
+              if (order[lvl] > order[overallLevel]) overallLevel = lvl;
+            };
+            const riskDetails = [];
+
+            // BP
+            if (bpF === "severe") { promote("high"); riskDetails.push("Severe BP"); }
+            else if (bpF === "high") { promote("moderate"); riskDetails.push("High BP"); }
+            else if (bpF === "low") { promote("moderate"); riskDetails.push("Low BP"); }
+
+            // Pulse
+            if (pulseF === "high" || pulseF === "low") { promote("moderate"); riskDetails.push(`Pulse ${pulseF}`); }
+
+            // Fetal HR
+            if (fhrF === "bradycardia") { promote("moderate"); riskDetails.push("FHR Bradycardia"); }
+            if (fhrF === "tachycardia") { promote("moderate"); riskDetails.push("FHR Tachycardia"); }
+
+            // BMI
+            if (bmi) {
+              const bmiVal = parseFloat(bmi);
+              if (bmiVal < 18.5) { promote("moderate"); riskDetails.push("Low BMI"); }
+              if (bmiVal > 24.9) { promote("moderate"); riskDetails.push("High BMI"); }
+            }
+
+            // Oedema
+            if (form.oedema === "Severe (+++)") { promote("high"); riskDetails.push("Severe Oedema"); }
+            else if (form.oedema === "Moderate (++)") { promote("high"); riskDetails.push("Moderate Oedema"); }
+            else if (form.oedema === "Mild (+)") { promote("moderate"); riskDetails.push("Mild Oedema"); }
+
+            // Review of Systems
+            const ros = form.reviewOfSystems;
+            if (ros.pvBleeding) { promote("high"); riskDetails.push("PV Bleeding"); }
+            if (ros.fetalMovements) { promote("high"); riskDetails.push("Reduced Fetal Movements"); }
+            if (ros.contractions) { promote("high"); riskDetails.push("Contractions"); }
+            if (ros.headache && ros.visualDisturbance) { promote("high"); riskDetails.push("Pre-eclampsia Signs"); }
+            else if (ros.headache) { promote("moderate"); riskDetails.push("Headache"); }
+            if (ros.pvDischarge) { promote("moderate"); riskDetails.push("PV Discharge"); }
+            if (ros.pelvicPain) { promote("moderate"); riskDetails.push("Pelvic Pain"); }
+            if (ros.epigastricPain) { promote("moderate"); riskDetails.push("Epigastric Pain"); }
+
+            // GBV
+            if (form.gbvRisk) { promote("high"); riskDetails.push("GBV Risk"); }
+
+            // Lab tests
+            form.tests.forEach(t => {
+              if (t.status === "abnormal") { promote("high"); riskDetails.push(`${t.test} (Abnormal)`); }
+              else if (t.status === "moderate") { promote("moderate"); riskDetails.push(`${t.test} (Moderate)`); }
+            });
+
+            const config = {
+              high: { bg: "bg-rose-50", border: "border-rose-200", dot: "bg-rose-500", text: "text-rose-700", label: "HIGH RISK" },
+              moderate: { bg: "bg-amber-50", border: "border-amber-200", dot: "bg-amber-400", text: "text-amber-700", label: "MODERATE RISK" },
+              low: { bg: "bg-emerald-50", border: "border-emerald-200", dot: "bg-emerald-500", text: "text-emerald-700", label: "LOW RISK" },
+            };
+            const c = config[overallLevel];
+            const detailLine = riskDetails.slice(0, 4).join(" · ") + (riskDetails.length > 4 ? ` +${riskDetails.length - 4} more` : "");
+            const adviceLine = overallLevel === "high" ? "Requires close monitoring and specialist care" : overallLevel === "moderate" ? "Monitor for complications" : "Normal pregnancy pathway";
+
+            return (
+              <div className={`${c.bg} border ${c.border} rounded-xl px-4 py-3 flex items-center gap-3 mt-6`}>
+                <span className={`w-3 h-3 rounded-full shrink-0 ${c.dot}`} />
+                <div className="flex-1">
+                  <p className={`text-[11px] font-bold uppercase tracking-wider ${c.text}`}>
+                    AUTO-ASSESSED: {c.label}
+                  </p>
+                  {detailLine && <p className={`text-[10px] ${c.text} opacity-80 mt-0.5`}>{detailLine}</p>}
+                  <p className={`text-[10px] ${c.text} opacity-60 mt-0.5`}>{adviceLine}</p>
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="flex justify-end gap-2 pt-2 border-t border-stone-100 mt-6">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
             <Button disabled={!form.findings.trim()} onClick={handleSubmit}>Save Visit</Button>
