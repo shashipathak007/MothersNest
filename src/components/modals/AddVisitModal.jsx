@@ -464,31 +464,25 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
               if (order[lvl] > order[overallLevel]) overallLevel = lvl;
             };
             const riskDetails = [];
-
             // BP
             if (bpF === "severe") { promote("high"); riskDetails.push("Severe BP"); }
             else if (bpF === "high") { promote("moderate"); riskDetails.push("High BP"); }
             else if (bpF === "low") { promote("moderate"); riskDetails.push("Low BP"); }
-
             // Pulse
             if (pulseF === "high" || pulseF === "low") { promote("moderate"); riskDetails.push(`Pulse ${pulseF}`); }
-
             // Fetal HR
             if (fhrF === "bradycardia") { promote("moderate"); riskDetails.push("FHR Bradycardia"); }
             if (fhrF === "tachycardia") { promote("moderate"); riskDetails.push("FHR Tachycardia"); }
-
             // BMI
             if (bmi) {
               const bmiVal = parseFloat(bmi);
               if (bmiVal < 18.5) { promote("moderate"); riskDetails.push("Low BMI"); }
               if (bmiVal > 24.9) { promote("moderate"); riskDetails.push("High BMI"); }
             }
-
             // Oedema
             if (form.oedema === "Severe (+++)") { promote("high"); riskDetails.push("Severe Oedema"); }
             else if (form.oedema === "Moderate (++)") { promote("high"); riskDetails.push("Moderate Oedema"); }
             else if (form.oedema === "Mild (+)") { promote("moderate"); riskDetails.push("Mild Oedema"); }
-
             // Review of Systems
             const ros = form.reviewOfSystems;
             if (ros.pvBleeding) { promote("high"); riskDetails.push("PV Bleedingz"); }
@@ -508,7 +502,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
               if (t.status === "abnormal") { promote("high"); riskDetails.push(`${t.test} (Abnormal)`); }
               else if (t.status === "moderate") { promote("moderate"); riskDetails.push(`${t.test} (Moderate)`); }
             });
-
             const config = {
               high: { bg: "bg-rose-50", border: "border-rose-200", dot: "bg-rose-500", text: "text-rose-700", label: "HIGH RISK" },
               moderate: { bg: "bg-amber-50", border: "border-amber-200", dot: "bg-amber-400", text: "text-amber-700", label: "MODERATE RISK" },
@@ -517,7 +510,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
             const c = config[overallLevel];
             const detailLine = riskDetails.slice(0, 4).join(" · ") + (riskDetails.length > 4 ? ` +${riskDetails.length - 4} more` : "");
             const adviceLine = overallLevel === "high" ? "Requires close monitoring and specialist care" : overallLevel === "moderate" ? "Monitor for complications" : "Normal pregnancy pathway";
-
             return (
               <div className={`${c.bg} border ${c.border} rounded-xl px-4 py-3 flex items-center gap-3 mt-6`}>
                 <span className={`w-3 h-3 rounded-full shrink-0 ${c.dot}`} />
@@ -531,7 +523,6 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
               </div>
             );
           })()}
-
           <div className="flex justify-end gap-2 pt-2 border-t border-stone-100 mt-6">
             <Button variant="ghost" onClick={onClose}>Cancel</Button>
             <Button disabled={!form.findings.trim()} onClick={handleSubmit}>Save Visit</Button>
