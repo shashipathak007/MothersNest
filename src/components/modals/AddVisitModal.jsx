@@ -491,7 +491,7 @@ export default function AddVisitModal({ patient, initialVisit, onClose }) {
 
             // Review of Systems
             const ros = form.reviewOfSystems;
-            if (ros.pvBleeding) { promote("high"); riskDetails.push("PV Bleeding"); }
+            if (ros.pvBleeding) { promote("high"); riskDetails.push("PV Bleedingz"); }
             if (ros.fetalMovements) { promote("high"); riskDetails.push("Reduced Fetal Movements"); }
             if (ros.contractions) { promote("high"); riskDetails.push("Contractions"); }
             if (ros.headache && ros.visualDisturbance) { promote("high"); riskDetails.push("Pre-eclampsia Signs"); }
